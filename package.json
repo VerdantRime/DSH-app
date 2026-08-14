@@ -1,0 +1,32 @@
+{
+  "name": "dsh-workdesk",
+  "version": "1.0.0",
+  "description": "DeepSeek Harness 桌面工作台",
+  "main": "out/main/index.js",
+  "author": "Mao",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "start": "electron-vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "dist": "electron-vite build && electron-builder"
+  },
+  "devDependencies": {
+    "@types/adm-zip": "^0.5.8",
+    "@types/node": "^26.2.0",
+    "electron": "^43.4.0",
+    "electron-builder": "^26.15.3",
+    "electron-vite": "^5.0.0",
+    "typescript": "^7.0.2",
+    "vite": "^7.3.6",
+    "vitest": "^4.1.10"
+  },
+  "dependencies": {
+    "@octokit/rest": "^22.0.1",
+    "adm-zip": "^0.6.0"
+  }
+}

@@ -1,0 +1,18 @@
+appId: com.mao.dsh-workdesk
+productName: DSH Workdesk
+directories:
+  output: release
+files:
+  - out/**/*
+  - package.json
+win:
+  target:
+    - nsis
+    - portable
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+portable:
+  artifactName: DSHWorkdesk-${version}-portable.exe

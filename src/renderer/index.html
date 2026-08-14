@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DSH 工作台</title>
+    <link rel="stylesheet" href="./styles/base.css" />
+    <link rel="stylesheet" href="./styles/theme.css" />
+  </head>
+  <body>
+    <div id="app" class="app">
+      <aside id="sidebar" class="sidebar">
+        <button id="collapse-btn" class="collapse-btn" title="折叠/展开侧边栏">☰</button>
+        <nav id="nav" class="nav"></nav>
+        <div class="sidebar-footer">
+          <span id="harness-dot" class="dot dot-idle" title="harness 状态"></span>
+          <span id="version" class="version">v1.0.0</span>
+        </div>
+      </aside>
+      <main id="content" class="content">
+        <section id="panel-chat" class="panel">
+          <div id="harness-console" class="harness-console">
+            <div class="console-row">
+              <span id="hc-dot" class="dot dot-idle"></span>
+              <span id="hc-status" class="hc-status">未启动</span>
+              <span id="hc-meta" class="hc-meta"></span>
+              <span class="spacer"></span>
+              <button id="hc-start" class="btn">启动</button>
+              <button id="hc-stop" class="btn" disabled>停止</button>
+              <button id="hc-restart" class="btn" disabled>重启</button>
+              <button id="hc-open" class="btn">浏览器打开</button>
+              <button id="hc-copy" class="btn">复制地址</button>
+              <button id="hc-logtoggle" class="btn">日志</button>
+            </div>
+            <div id="hc-logdrawer" class="log-drawer hidden">
+              <pre id="hc-log" class="log-view"></pre>
+            </div>
+          </div>
+          <div id="chat-webview-host" class="webview-host"></div>
+        </section>
+        <section id="panel-github" class="panel hidden"></section>
+        <section id="panel-settings" class="panel hidden"></section>
+      </main>
+    </div>
+    <footer id="statusbar" class="statusbar">
+      <span id="status-harness">harness: 未连接</span>
+      <span id="status-github">GitHub: 未登录</span>
+    </footer>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>
