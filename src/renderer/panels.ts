@@ -17,3 +17,19 @@ export const DEFAULT_PANEL: PanelId = 'chat'
 export function isPanelId(v: string): v is PanelId {
   return PANELS.some((p) => p.id === v)
 }
+
+export interface PanelVisibility {
+  chat: boolean
+  github: boolean
+  settings: boolean
+  webviewVisible: boolean
+}
+
+export function panelVisibility(active: PanelId): PanelVisibility {
+  return {
+    chat: active === 'chat',
+    github: active === 'github',
+    settings: active === 'settings',
+    webviewVisible: active === 'chat'
+  }
+}

@@ -1,5 +1,5 @@
 import { PANELS, DEFAULT_PANEL, isPanelId, type PanelId } from './panels'
-import { initChat } from './chat'
+import { initChat, setChatVisible } from './chat'
 import { initGithub } from './github'
 import { initSettings } from './settings'
 
@@ -35,6 +35,7 @@ function select(id: PanelId): void {
   document.querySelectorAll('.nav-item').forEach((n) => {
     n.classList.toggle('active', (n as HTMLElement).dataset.panel === id)
   })
+  setChatVisible(id === 'chat')
 }
 
 function applyCollapse(): void {

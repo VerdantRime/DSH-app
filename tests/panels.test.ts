@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { PANELS, DEFAULT_PANEL, isPanelId } from '../src/renderer/panels'
+import { PANELS, DEFAULT_PANEL, isPanelId, panelVisibility } from '../src/renderer/panels'
 
 describe('panels', () => {
   it('有三个面板且聊天为默认', () => {
@@ -18,5 +18,14 @@ describe('panels', () => {
     expect(isPanelId('github')).toBe(true)
     expect(isPanelId('settings')).toBe(true)
     expect(isPanelId('nope')).toBe(false)
+  })
+
+  it('panelVisibility：非聊天面板时 webview 应隐藏', () => {
+    expect(panelVisibility('chat').webviewVisible).toBe(true)
+    expect(panelVisibility('chat').chat).toBe(true)
+    expect(panelVisibility('github').webviewVisible).toBe(false)
+    expect(panelVisibility('github').github).toBe(true)
+    expect(panelVisibility('settings').webviewVisible).toBe(false)
+    expect(panelVisibility('settings').settings).toBe(true)
   })
 })

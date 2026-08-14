@@ -114,3 +114,10 @@ export function initChat(): void {
   })
   void refresh()
 }
+
+// webview 是独立原生视图，会盖在其它面板之上；切走时必须显式隐藏
+export function setChatVisible(visible: boolean): void {
+  if (webview) {
+    webview.style.display = visible ? 'flex' : 'none'
+  }
+}
