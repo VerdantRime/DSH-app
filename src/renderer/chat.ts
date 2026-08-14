@@ -1,4 +1,4 @@
-import { statusLabel, dotClass, deriveControls, metaText } from './harness-ui'
+import { statusLabel, dotClass, metaText } from './harness-ui'
 import type { HarnessStatus } from '../shared/types'
 
 let webview: WebviewTag | null = null
@@ -23,11 +23,6 @@ function setText(id: string, text: string): void {
   if (el) el.textContent = text
 }
 
-function setDisabled(id: string, disabled: boolean): void {
-  const el = document.getElementById(id) as HTMLButtonElement | null
-  if (el) el.disabled = disabled
-}
-
 function renderStatus(s: HarnessStatus): void {
   const dot = document.getElementById('hc-dot')
   if (dot) dot.className = dotClass(s)
@@ -37,13 +32,6 @@ function renderStatus(s: HarnessStatus): void {
 
   const sidebarDot = document.getElementById('harness-dot')
   if (sidebarDot) sidebarDot.className = dotClass(s)
-
-  const c = deriveControls(s)
-  setDisabled('hc-start', !c.canStart)
-  setDisabled('hc-stop', !c.canStop)
-  setDisabled('hc-restart', !c.canRestart)
-  const stopBtn = document.getElementById('hc-stop')
-  if (stopBtn) stopBtn.title = s.source === 'external' ? '由外部启动，不接管停止' : ''
 
   // 就绪后加载 harness 页面
   if (webview && (s.state === 'running' || s.state === 'reused') && loadedUrl !== s.url) {
@@ -62,15 +50,6 @@ function bindButton(id: string, fn: () => void): void {
 }
 
 function bindButtons(): void {
-  bindButton('hc-start', () => {
-    void window.api.harnessStart()
-  })
-  bindButton('hc-stop', () => {
-    void window.api.harnessStop()
-  })
-  bindButton('hc-restart', () => {
-    void window.api.harnessRestart()
-  })
   bindButton('hc-open', () => {
     void window.api.harnessGetStatus().then((s) => window.api.openExternal(s.url))
   })

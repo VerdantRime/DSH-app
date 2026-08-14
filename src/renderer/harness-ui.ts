@@ -30,28 +30,6 @@ export function formatUptime(startedAt: number | null, now: number): string {
   return m + 'm ' + s + 's'
 }
 
-export interface HarnessControls {
-  canStart: boolean
-  canStop: boolean
-  canRestart: boolean
-}
-
-export function deriveControls(status: HarnessStatus): HarnessControls {
-  switch (status.state) {
-    case 'idle':
-    case 'error':
-      return { canStart: true, canStop: false, canRestart: false }
-    case 'starting':
-      return { canStart: false, canStop: true, canRestart: false }
-    case 'running':
-      return { canStart: false, canStop: true, canRestart: true }
-    case 'reused':
-      return { canStart: false, canStop: false, canRestart: false }
-    default:
-      return { canStart: true, canStop: false, canRestart: false }
-  }
-}
-
 export function metaText(status: HarnessStatus, now: number): string {
   const parts: string[] = []
   if (status.pid) parts.push('PID ' + status.pid)

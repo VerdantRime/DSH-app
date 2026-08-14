@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { statusLabel, dotClass, deriveControls, formatUptime, metaText } from '../src/renderer/harness-ui'
+import { statusLabel, dotClass, formatUptime, metaText } from '../src/renderer/harness-ui'
 import type { HarnessStatus } from '../src/shared/types'
 
 function status(partial: Partial<HarnessStatus>): HarnessStatus {
@@ -25,16 +25,6 @@ describe('harness-ui', () => {
   it('状态点 class 正确', () => {
     expect(dotClass(status({ state: 'running' }))).toBe('dot dot-running')
     expect(dotClass(status({ state: 'starting' }))).toBe('dot dot-starting')
-  })
-
-  it('控制按钮派生正确', () => {
-    expect(deriveControls(status({ state: 'idle' })).canStart).toBe(true)
-    expect(deriveControls(status({ state: 'running' })).canRestart).toBe(true)
-    expect(deriveControls(status({ state: 'running' })).canStop).toBe(true)
-    expect(deriveControls(status({ state: 'reused' })).canStop).toBe(false)
-    expect(deriveControls(status({ state: 'reused' })).canRestart).toBe(false)
-    expect(deriveControls(status({ state: 'starting' })).canStop).toBe(true)
-    expect(deriveControls(status({ state: 'error' })).canStart).toBe(true)
   })
 
   it('运行时长格式化', () => {
