@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { GithubClient, mapRepoSummary, mapPullSummary, mapCommitSummary, mapIssueSummary } from '../src/main/github'
+import { GithubClient, validateGithubInput, mapRepoSummary, mapPullSummary, mapCommitSummary, mapIssueSummary } from '../src/main/github'
 
 describe('github mappers', () => {
   it('mapRepoSummary 映射字段', () => {
@@ -91,5 +91,12 @@ describe('GithubClient 端点', () => {
     const c = new GithubClient('tok', { octokit: fake as any })
     await c.createOrUpdateFile('o', 'r', 'new.md', 'content', '新增')
     expect(captured.sha).toBeUndefined()
+  })
+
+  it('validateGithubInput 校验 token 与地址', () => {
+    expect(validateGithubInput('ghp_abc123', 'https://api.github.com')).toBeNull()
+    expect(validateGithubInput('你好', 'https://api.github.com')).toContain('非 ASCII')
+    expect(validateGithubInput('ghp_abc', 'api.github.com')).toContain('http')
+    expect(validateGithubInput('ghp_abc', 'https://镜像.com')).toContain('中文')
   })
 })

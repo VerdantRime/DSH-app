@@ -137,12 +137,31 @@ export interface GithubClientOptions {
   octokit?: Octokit
 }
 
+function hasNonAscii(s: string): boolean {
+  for (const ch of s) {
+    if (ch.charCodeAt(0) > 127) return true
+  }
+  return false
+}
+
+export function validateGithubInput(token: string, baseUrl: string): string | null {
+  if (token.trim().length === 0 || hasNonAscii(token)) {
+    return 'GitHub token 无效或含非 ASCII 字符，请粘贴正确的 Personal Access Token'
+  }
+  if ((!baseUrl.startsWith('http://') && !baseUrl.startsWith('https://')) || hasNonAscii(baseUrl)) {
+    return 'GitHub API 地址无效，需以 http:// 或 https:// 开头且不含中文'
+  }
+  return null
+}
+
 export class GithubClient implements IGithubClient {
   readonly baseUrl: string
   private readonly octokit: Octokit
 
   constructor(token: string, options: GithubClientOptions = {}) {
     this.baseUrl = options.baseUrl ?? DEFAULT_GITHUB_API
+    const err = validateGithubInput(token, this.baseUrl)
+    if (err) throw new Error(err)
     this.octokit = options.octokit ?? new Octokit({ auth: token, baseUrl: this.baseUrl })
   }
 
