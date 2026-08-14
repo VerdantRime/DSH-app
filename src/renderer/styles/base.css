@@ -110,3 +110,4 @@ body {
 .set-label { font-size: 13px; min-width: 90px; }
 .set-note { font-size: 13px; color: var(--fg-muted); margin-bottom: 6px; }
 .set-row .btn.active { background: var(--accent); color: #fff; }
+.gh-token-help { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; background: var(--sidebar-bg); }

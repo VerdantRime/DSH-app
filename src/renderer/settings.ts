@@ -1,4 +1,5 @@
 import { resolveTheme, themeLabel } from './theme'
+import { GITHUB_TOKEN_URL, TOKEN_HELP_STEPS } from './github-help'
 import type { AppConfig, ThemeMode, GithubStatus } from '../shared/types'
 
 let cfg: AppConfig | null = null
@@ -85,6 +86,15 @@ function renderGithub(): HTMLElement {
   const statusEl = h('div', 'set-note', '加载中…')
   statusEl.id = 'gh-status-line'
   s.appendChild(statusEl)
+
+  const help = h('div', 'gh-token-help')
+  for (const step of TOKEN_HELP_STEPS) {
+    help.appendChild(h('div', 'set-note', step))
+  }
+  help.appendChild(btn('打开 GitHub Token 页面', () => {
+    void window.api.openExternal(GITHUB_TOKEN_URL)
+  }))
+  s.appendChild(help)
 
   const row = h('div', 'set-row')
   const input = document.createElement('input')
