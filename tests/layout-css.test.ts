@@ -13,4 +13,8 @@ describe('侧边栏布局（base.css）', () => {
   it('不再使用会卡顿的 width 过渡动画', () => {
     expect(css).not.toContain('transition: width')
   })
+
+  it('面板隐藏用 !important 覆盖 #panel-chat 的 display:flex', () => {
+    expect(css).toMatch(/\.panel\.hidden\s*\{\s*display:\s*none\s*!important/)
+  })
 })

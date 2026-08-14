@@ -48,7 +48,7 @@ body {
 .sidebar.collapsed .version { display: none; }
 .content { flex: 1; position: relative; overflow: hidden; }
 .panel { position: absolute; inset: 0; }
-.panel.hidden { display: none; }
+.panel.hidden { display: none !important; }
 .statusbar {
   flex: none; height: 26px; display: flex; align-items: center; gap: 20px;
   padding: 0 12px; font-size: 12px; color: var(--fg-muted);
