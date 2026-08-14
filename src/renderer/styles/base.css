@@ -11,15 +11,14 @@ body {
 }
 .app { flex: 1; display: flex; min-height: 0; }
 .sidebar {
-  width: 200px;
+  width: 160px;
   flex: none;
   display: flex;
   flex-direction: column;
   background: var(--sidebar-bg);
   border-right: 1px solid var(--border);
-  transition: width 0.15s ease;
 }
-.sidebar.collapsed { width: 56px; }
+.sidebar.collapsed { width: 48px; }
 .collapse-btn {
   border: none; background: transparent; color: var(--fg);
   font-size: 16px; padding: 12px; cursor: pointer; text-align: left;
