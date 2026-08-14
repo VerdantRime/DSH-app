@@ -99,4 +99,15 @@ export class GithubService {
   async getCommit(owner: string, repo: string, sha: string): Promise<CommitDetail> {
     return (await this.getClient()).getCommit(owner, repo, sha)
   }
+
+  async createOrUpdateFile(
+    owner: string,
+    repo: string,
+    path: string,
+    content: string,
+    message: string,
+    sha?: string
+  ): Promise<void> {
+    await (await this.getClient()).createOrUpdateFile(owner, repo, path, content, message, sha)
+  }
 }

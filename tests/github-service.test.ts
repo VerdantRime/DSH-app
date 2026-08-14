@@ -24,6 +24,7 @@ function fakeClient(overrides: Partial<IGithubClient> = {}): IGithubClient {
     getPull: async () => ({ number: 0, title: '', state: 'open', author: '', createdAt: '', headBranch: '', baseBranch: '', body: '', additions: 0, deletions: 0, changedFiles: 0 }),
     listCommits: async () => [],
     getCommit: async () => ({ sha: '', message: '', author: '', date: '', files: [] }),
+    createOrUpdateFile: async () => {},
     ...overrides
   }
 }

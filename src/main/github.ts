@@ -127,13 +127,23 @@ export interface IGithubClient {
   getPull(owner: string, repo: string, number: number): Promise<PullDetail>
   listCommits(owner: string, repo: string): Promise<CommitSummary[]>
   getCommit(owner: string, repo: string, sha: string): Promise<CommitDetail>
+  createOrUpdateFile(owner: string, repo: string, path: string, content: string, message: string, sha?: string): Promise<void>
+}
+
+export const DEFAULT_GITHUB_API = 'https://api.github.com'
+
+export interface GithubClientOptions {
+  baseUrl?: string
+  octokit?: Octokit
 }
 
 export class GithubClient implements IGithubClient {
+  readonly baseUrl: string
   private readonly octokit: Octokit
 
-  constructor(token: string, octokit?: Octokit) {
-    this.octokit = octokit ?? new Octokit({ auth: token })
+  constructor(token: string, options: GithubClientOptions = {}) {
+    this.baseUrl = options.baseUrl ?? DEFAULT_GITHUB_API
+    this.octokit = options.octokit ?? new Octokit({ auth: token, baseUrl: this.baseUrl })
   }
 
   async getAccount(): Promise<string> {
@@ -176,7 +186,7 @@ export class GithubClient implements IGithubClient {
         : ''
     return {
       tree: [],
-      file: { path: data?.path ?? path, content, truncated: (data?.size ?? 0) > 1000000 }
+      file: { path: data?.path ?? path, content, truncated: (data?.size ?? 0) > 1000000, sha: data?.sha ?? '' }
     }
   }
 
@@ -209,5 +219,24 @@ export class GithubClient implements IGithubClient {
   async getCommit(owner: string, repo: string, sha: string): Promise<CommitDetail> {
     const res = await this.octokit.rest.repos.getCommit({ owner, repo, ref: sha })
     return mapCommitDetail(res.data)
+  }
+
+  async createOrUpdateFile(
+    owner: string,
+    repo: string,
+    path: string,
+    content: string,
+    message: string,
+    sha?: string
+  ): Promise<void> {
+    const payload: Record<string, unknown> = {
+      owner,
+      repo,
+      path,
+      message,
+      content: Buffer.from(content, 'utf-8').toString('base64')
+    }
+    if (sha) payload.sha = sha
+    await this.octokit.rest.repos.createOrUpdateFileContents(payload as any)
   }
 }

@@ -10,6 +10,7 @@ import { createBackupService } from './backup-service'
 import { CredentialsStore } from './credentials'
 import { createSafeStorageCipher } from './secret'
 import { GithubService } from './github-service'
+import { GithubClient } from './github'
 import { shouldHideToTray } from './close-behavior'
 import { IPC, type AppConfig } from '../shared/types'
 
@@ -68,7 +69,7 @@ if (!gotLock) {
     logger = new RollingLogger(join(userData, 'harness.log'))
     const backup = createBackupService(userData, cfg.harness.dataDir)
     const creds = new CredentialsStore(join(userData, 'github.json'), createSafeStorageCipher())
-    const github = new GithubService(creds)
+    const github = new GithubService(creds, (token) => new GithubClient(token, { baseUrl: store?.get()?.github?.apiBaseUrl ?? 'https://api.github.com' }))
 
     registerIpc({
       store,

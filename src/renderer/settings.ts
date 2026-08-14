@@ -107,6 +107,20 @@ function renderGithub(): HTMLElement {
   }))
   s.appendChild(help)
 
+  const urlRow = h('div', 'set-row')
+  urlRow.appendChild(h('span', 'set-label', 'GitHub API 地址'))
+  const urlInput = document.createElement('input')
+  urlInput.className = 'gh-search'
+  urlInput.placeholder = 'https://api.github.com'
+  urlInput.value = cfg?.github.apiBaseUrl ?? 'https://api.github.com'
+  urlRow.appendChild(urlInput)
+  urlRow.appendChild(btn('保存', () => {
+    const v = urlInput.value.trim()
+    if (v) void window.api.configSet({ github: { apiBaseUrl: v } })
+  }))
+  s.appendChild(urlRow)
+  s.appendChild(h('div', 'set-note', '国内网络访问 GitHub 不稳定时，可填入镜像/代理地址'))
+
   const row = h('div', 'set-row')
   const input = document.createElement('input')
   input.type = 'password'

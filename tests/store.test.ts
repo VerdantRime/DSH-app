@@ -22,6 +22,7 @@ describe('ConfigStore', () => {
     expect(cfg.harness.port).toBe(3080)
     expect(cfg.sidebarCollapsed).toBe(false)
     expect(cfg.closeToTray).toBe(true)
+    expect(cfg.github.apiBaseUrl).toBe('https://api.github.com')
   })
 
   it('顶层与嵌套修改都能跨实例持久化', async () => {

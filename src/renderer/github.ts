@@ -23,6 +23,8 @@ let currentTab: Tab = 'files'
 let filePath = ''
 let issueState: 'open' | 'closed' = 'open'
 let pullState: 'open' | 'closed' = 'open'
+let currentFileSha = ''
+let currentFileContent = ''
 
 function h(tag: string, className?: string, text?: string): HTMLElement {
   const e = document.createElement(tag)
@@ -298,10 +300,15 @@ async function loadFileContent(path: string): Promise<void> {
     const { file } = await window.api.githubGetContents(currentRepo.owner, currentRepo.repo, path)
     clear(content)
     if (file) {
-      content.appendChild(btn('← 返回文件列表', () => {
+      currentFileSha = file.sha
+      currentFileContent = file.content
+      const bar = h('div', 'gh-bar')
+      bar.appendChild(btn('← 返回文件列表', () => {
         filePath = parentPath(path)
         void loadFiles()
       }))
+      bar.appendChild(btn('编辑', () => renderEditor(path)))
+      content.appendChild(bar)
       content.appendChild(h('pre', 'gh-code', file.content))
     } else {
       content.appendChild(h('div', 'gh-empty', '无法读取该文件'))
@@ -310,6 +317,32 @@ async function loadFileContent(path: string): Promise<void> {
     clear(content)
     content.appendChild(h('div', 'gh-error', '加载失败：' + errMsg(e)))
   }
+}
+
+function renderEditor(path: string): void {
+  if (!currentRepo) return
+  const content = document.getElementById('gh-content')
+  if (!content) return
+  clear(content)
+  content.appendChild(h('h3', '', '编辑 ' + path))
+  const ta = document.createElement('textarea')
+  ta.className = 'gh-editor'
+  ta.value = currentFileContent
+  content.appendChild(ta)
+  const msg = document.createElement('input')
+  msg.className = 'gh-search'
+  msg.placeholder = '提交说明（commit message）'
+  content.appendChild(msg)
+  const row = h('div', 'set-row')
+  row.appendChild(btn('提交', () => {
+    const message = msg.value.trim() || 'Update ' + path
+    void window.api
+      .githubSaveFile(currentRepo!.owner, currentRepo!.repo, path, ta.value, message, currentFileSha)
+      .then(() => loadFileContent(path))
+      .catch((e) => window.alert('提交失败：' + errMsg(e)))
+  }))
+  row.appendChild(btn('取消', () => void loadFileContent(path)))
+  content.appendChild(row)
 }
 
 // Issues

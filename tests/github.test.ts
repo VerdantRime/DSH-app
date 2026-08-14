@@ -44,7 +44,7 @@ describe('GithubClient 端点', () => {
         activity: { listReposStarredByAuthenticatedUser: async () => ({ data: [] }) }
       }
     }
-    const client = new GithubClient('tok', fake as any)
+    const client = new GithubClient('tok', { octokit: fake as any })
     const repos = await client.listRepos('mine')
     expect(calls).toContain('mine')
     expect(repos[0].fullName).toBe('a/x')
@@ -52,21 +52,44 @@ describe('GithubClient 端点', () => {
 
   it('searchRepos 使用 items', async () => {
     const fake = { rest: { search: { repos: async () => ({ data: { items: [{ id: 1, name: 'q', full_name: 'a/q', owner: { login: 'a' } }] } }) } } }
-    const client = new GithubClient('tok', fake as any)
+    const client = new GithubClient('tok', { octokit: fake as any })
     const repos = await client.searchRepos('q')
     expect(repos[0].name).toBe('q')
   })
 
   it('getContents 目录返回树、文件解码 base64', async () => {
     const dirFake = { rest: { repos: { getContent: async () => ({ data: [{ name: 'a.ts', path: 'a.ts', type: 'file' }] }) } } }
-    const c1 = new GithubClient('tok', dirFake as any)
+    const c1 = new GithubClient('tok', { octokit: dirFake as any })
     const d = await c1.getContents('o', 'r')
     expect(d.tree).toHaveLength(1)
     expect(d.file).toBeNull()
 
     const fileFake = { rest: { repos: { getContent: async () => ({ data: { path: 'a.ts', encoding: 'base64', content: Buffer.from('hello', 'utf-8').toString('base64'), size: 10 } }) } } }
-    const c2 = new GithubClient('tok', fileFake as any)
+    const c2 = new GithubClient('tok', { octokit: fileFake as any })
     const f = await c2.getContents('o', 'r', 'a.ts')
     expect(f.file?.content).toBe('hello')
+  })
+
+  it('baseUrl 默认与自定义', () => {
+    expect(new GithubClient('tok').baseUrl).toBe('https://api.github.com')
+    expect(new GithubClient('tok', { baseUrl: 'https://mirror.example.com' }).baseUrl).toBe('https://mirror.example.com')
+  })
+
+  it('createOrUpdateFile 提交 base64 内容与 sha', async () => {
+    let captured: any = null
+    const fake = { rest: { repos: { createOrUpdateFileContents: async (args: any) => { captured = args } } } }
+    const c = new GithubClient('tok', { octokit: fake as any })
+    await c.createOrUpdateFile('o', 'r', 'a.md', '你好 world', '更新文件', 'sha1')
+    expect(captured.content).toBe(Buffer.from('你好 world', 'utf-8').toString('base64'))
+    expect(captured.sha).toBe('sha1')
+    expect(captured.message).toBe('更新文件')
+  })
+
+  it('createOrUpdateFile 新建时不含 sha', async () => {
+    let captured: any = null
+    const fake = { rest: { repos: { createOrUpdateFileContents: async (args: any) => { captured = args } } } }
+    const c = new GithubClient('tok', { octokit: fake as any })
+    await c.createOrUpdateFile('o', 'r', 'new.md', 'content', '新增')
+    expect(captured.sha).toBeUndefined()
   })
 })
