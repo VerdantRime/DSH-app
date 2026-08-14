@@ -8,6 +8,7 @@ import type {
   CommitSummary,
   CommitDetail
 } from '../shared/types'
+import { GITHUB_TOKEN_URL, TOKEN_HELP_STEPS } from './github-help'
 
 type ListMode = 'mine' | 'starred' | 'search'
 type Tab = 'files' | 'issues' | 'pulls' | 'commits' | 'readme'
@@ -79,7 +80,17 @@ function renderEmpty(): void {
   const box = h('div', 'gh-empty')
   box.appendChild(h('div', 'gh-empty-icon', '🐙'))
   box.appendChild(h('div', '', '连接 GitHub（只读）'))
-  box.appendChild(h('div', 'gh-empty-sub', '需要一个只读 Personal Access Token'))
+  box.appendChild(h('div', 'gh-empty-sub', '需要一个只读 Personal Access Token，按下面步骤获取：'))
+
+  const help = h('div', 'gh-token-help')
+  for (const step of TOKEN_HELP_STEPS) {
+    help.appendChild(h('div', 'set-note', step))
+  }
+  help.appendChild(btn('打开 GitHub Token 页面', () => {
+    void window.api.openExternal(GITHUB_TOKEN_URL)
+  }))
+  box.appendChild(help)
+
   box.appendChild(btn('去设置里配置 token', () => {
     document.dispatchEvent(new CustomEvent('dsh:navigate', { detail: 'settings' }))
   }))

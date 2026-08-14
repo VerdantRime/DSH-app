@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest'
+import { readFileSync } from 'fs'
+import { join } from 'path'
 import { GITHUB_TOKEN_URL, TOKEN_HELP_STEPS } from '../src/renderer/github-help'
 
 describe('GitHub token 获取指引', () => {
@@ -12,5 +14,11 @@ describe('GitHub token 获取指引', () => {
     expect(joined).toContain('Read-only')
     expect(joined).toContain('只读')
     expect(joined).toContain('Generate new token')
+  })
+
+  it('GitHub 面板也引用 token 获取指引', () => {
+    const src = readFileSync(join(process.cwd(), 'src', 'renderer', 'github.ts'), 'utf-8')
+    expect(src).toContain('TOKEN_HELP_STEPS')
+    expect(src).toContain('GITHUB_TOKEN_URL')
   })
 })
