@@ -21,6 +21,7 @@ describe('ConfigStore', () => {
     expect(cfg.theme).toBe('system')
     expect(cfg.harness.port).toBe(3080)
     expect(cfg.sidebarCollapsed).toBe(false)
+    expect(cfg.closeToTray).toBe(true)
   })
 
   it('顶层与嵌套修改都能跨实例持久化', async () => {

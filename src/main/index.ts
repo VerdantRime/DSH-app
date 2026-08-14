@@ -10,6 +10,7 @@ import { createBackupService } from './backup-service'
 import { CredentialsStore } from './credentials'
 import { createSafeStorageCipher } from './secret'
 import { GithubService } from './github-service'
+import { shouldHideToTray } from './close-behavior'
 import { IPC, type AppConfig } from '../shared/types'
 
 let mainWindow: BrowserWindow | null = null
@@ -99,7 +100,7 @@ if (!gotLock) {
     }
 
     mainWindow.on('close', (e) => {
-      if (!isQuitting) {
+      if (shouldHideToTray(store?.get()?.closeToTray ?? true, isQuitting)) {
         e.preventDefault()
         mainWindow?.hide()
       }

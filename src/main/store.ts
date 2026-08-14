@@ -9,6 +9,7 @@ export function defaultConfig(): AppConfig {
     theme: 'system',
     launchBehavior: { autoStartHarness: true },
     sidebarCollapsed: false,
+    closeToTray: true,
     harness: { port: 3080, dataDir: join(homedir(), '.dsh') },
     windowBounds: { x: 0, y: 0, width: 1200, height: 800, maximized: false }
   }

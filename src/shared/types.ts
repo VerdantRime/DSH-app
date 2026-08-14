@@ -15,6 +15,7 @@ export interface AppConfig {
     autoStartHarness: boolean
   }
   sidebarCollapsed: boolean
+  closeToTray: boolean
   harness: {
     port: number
     dataDir: string

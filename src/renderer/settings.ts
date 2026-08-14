@@ -78,6 +78,17 @@ function renderGeneral(): HTMLElement {
   })
   launchRow.appendChild(cb)
   s.appendChild(launchRow)
+
+  const closeRow = h('div', 'set-row')
+  closeRow.appendChild(h('span', 'set-label', '关闭窗口后最小化到托盘（后台运行）'))
+  const cc = document.createElement('input')
+  cc.type = 'checkbox'
+  cc.checked = cfg?.closeToTray ?? true
+  cc.addEventListener('change', () => {
+    void window.api.configSet({ closeToTray: cc.checked })
+  })
+  closeRow.appendChild(cc)
+  s.appendChild(closeRow)
   return s
 }
 
