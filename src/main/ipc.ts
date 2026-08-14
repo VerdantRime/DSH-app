@@ -1,4 +1,4 @@
-import { ipcMain, shell, type BrowserWindow } from 'electron'
+import { app, ipcMain, shell, type BrowserWindow } from 'electron'
 import { IPC } from '../shared/types'
 import type { ConfigStore } from './store'
 import type { HarnessManager } from './harness-manager'
@@ -23,7 +23,7 @@ export function registerIpc(deps: IpcDeps): void {
   ipcMain.handle(IPC.configGet, () => deps.store.get())
   ipcMain.handle(IPC.configSet, (_e, patch) => deps.store.set(patch))
   // 系统
-  ipcMain.handle(IPC.appGetVersion, () => '1.0.0')
+  ipcMain.handle(IPC.appGetVersion, () => app.getVersion())
   ipcMain.handle(IPC.appOpenExternal, (_e, url: string) => shell.openExternal(url))
   ipcMain.handle(IPC.appShowWindow, () => deps.getWindow()?.show())
   ipcMain.handle(IPC.appQuitReal, () => deps.quit())
