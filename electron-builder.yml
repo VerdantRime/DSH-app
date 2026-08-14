@@ -1,11 +1,12 @@
 appId: com.mao.dsh-workdesk
-productName: DSH Workdesk
+productName: DeepSeek工作台
 directories:
   output: release
 files:
   - out/**/*
   - package.json
 win:
+  icon: build/icon.png
   target:
     - nsis
     - portable
@@ -15,4 +16,4 @@ nsis:
   createDesktopShortcut: true
   createStartMenuShortcut: true
 portable:
-  artifactName: DSHWorkdesk-${version}-portable.exe
+  artifactName: DeepSeek工作台-${version}-portable.exe
