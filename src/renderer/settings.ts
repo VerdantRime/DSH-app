@@ -207,7 +207,7 @@ function renderHarness(): HTMLElement {
 
 function renderAbout(): HTMLElement {
   const s = section('关于')
-  s.appendChild(h('div', 'set-note', 'DeepSeek工作台 v2.1.0'))
+  s.appendChild(h('div', 'set-note', 'DeepSeek工作台 v2.1.1'))
   s.appendChild(h('div', 'set-note', '数据目录：应用数据目录（%APPDATA%） + ' + (cfg?.harness.dataDir ?? '~/.dsh')))
   return s
 }
