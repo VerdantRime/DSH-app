@@ -35,7 +35,9 @@ body {
 }
 .nav-item:hover { background: var(--hover); }
 .nav-item.active { background: var(--accent); color: #ffffff; box-shadow: var(--shadow-sm); }
-.nav-icon { font-size: 16px; flex: none; }
+.nav-icon { width: 18px; height: 18px; flex: none; display: inline-flex; align-items: center; justify-content: center; }
+.nav-icon svg { width: 18px; height: 18px; display: block; }
+.collapse-btn svg { width: 18px; height: 18px; display: block; }
 .sidebar.collapsed .nav-label { display: none; }
 .sidebar-footer {
   margin-top: auto; padding: 12px; display: flex; align-items: center; gap: 8px;

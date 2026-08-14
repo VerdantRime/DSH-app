@@ -15,7 +15,7 @@ function buildNav(): void {
     btn.dataset.panel = p.id
     const icon = document.createElement('span')
     icon.className = 'nav-icon'
-    icon.textContent = p.icon
+    icon.innerHTML = p.icon
     const label = document.createElement('span')
     label.className = 'nav-label'
     label.textContent = p.label
