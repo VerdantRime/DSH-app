@@ -23,6 +23,7 @@ describe('ConfigStore', () => {
     expect(cfg.sidebarCollapsed).toBe(false)
     expect(cfg.closeToTray).toBe(true)
     expect(cfg.github.apiBaseUrl).toBe('https://api.github.com')
+    expect(cfg.github.allowInsecureTls).toBe(false)
   })
 
   it('顶层与嵌套修改都能跨实例持久化', async () => {

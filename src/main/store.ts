@@ -1,7 +1,7 @@
 import { promises as fs } from 'fs'
 import { join, dirname } from 'path'
 import { homedir } from 'os'
-import type { AppConfig } from '../shared/types'
+import type { AppConfig, DeepPartial } from '../shared/types'
 
 export function defaultConfig(): AppConfig {
   return {
@@ -10,7 +10,7 @@ export function defaultConfig(): AppConfig {
     launchBehavior: { autoStartHarness: true },
     sidebarCollapsed: false,
     closeToTray: true,
-    github: { apiBaseUrl: 'https://api.github.com' },
+    github: { apiBaseUrl: 'https://api.github.com', allowInsecureTls: false },
     harness: { port: 3080, dataDir: join(homedir(), '.dsh') },
     windowBounds: { x: 0, y: 0, width: 1200, height: 800, maximized: false }
   }
@@ -49,7 +49,7 @@ export class ConfigStore {
     return structuredClone(this.config)
   }
 
-  set(patch: Partial<AppConfig>): AppConfig {
+  set(patch: DeepPartial<AppConfig>): AppConfig {
     this.config = this.merge(this.config, patch)
     this.scheduleWrite()
     return this.get()
@@ -78,7 +78,7 @@ export class ConfigStore {
     await fs.rename(tmp, this.path)
   }
 
-  private merge(base: AppConfig, patch: Partial<AppConfig>): AppConfig {
+  private merge(base: AppConfig, patch: DeepPartial<AppConfig>): AppConfig {
     const out = { ...(base as unknown as Record<string, unknown>) }
     const p = patch as unknown as Record<string, unknown>
     const b = base as unknown as Record<string, unknown>

@@ -121,6 +121,18 @@ function renderGithub(): HTMLElement {
   s.appendChild(urlRow)
   s.appendChild(h('div', 'set-note', '国内网络访问 GitHub 不稳定时，可填入镜像/代理地址'))
 
+  const tlsRow = h('div', 'set-row')
+  tlsRow.appendChild(h('span', 'set-label', '忽略 SSL 证书校验'))
+  const tlsCb = document.createElement('input')
+  tlsCb.type = 'checkbox'
+  tlsCb.checked = cfg?.github.allowInsecureTls ?? false
+  tlsCb.addEventListener('change', () => {
+    void window.api.configSet({ github: { allowInsecureTls: tlsCb.checked } })
+  })
+  tlsRow.appendChild(tlsCb)
+  s.appendChild(tlsRow)
+  s.appendChild(h('div', 'set-note', '出现「证书校验失败」时勾选，重启后生效（不校验证书有一定安全风险）'))
+
   const row = h('div', 'set-row')
   const input = document.createElement('input')
   input.type = 'password'

@@ -18,12 +18,17 @@ export interface AppConfig {
   closeToTray: boolean
   github: {
     apiBaseUrl: string
+    allowInsecureTls: boolean
   }
   harness: {
     port: number
     dataDir: string
   }
   windowBounds: WindowBounds
+}
+
+export type DeepPartial<T> = {
+  [K in keyof T]?: T[K] extends object ? DeepPartial<T[K]> : T[K]
 }
 
 export type HarnessState = 'idle' | 'starting' | 'running' | 'reused' | 'error'
@@ -170,7 +175,7 @@ export const IPC = {
 export interface WorkdeskApi {
   ping(): Promise<string>
   configGet(): Promise<AppConfig>
-  configSet(patch: Partial<AppConfig>): Promise<AppConfig>
+  configSet(patch: DeepPartial<AppConfig>): Promise<AppConfig>
   harnessGetStatus(): Promise<HarnessStatus>
   harnessStart(): Promise<HarnessStatus>
   harnessStop(): Promise<{ stoppedOwn: boolean }>

@@ -65,6 +65,11 @@ if (!gotLock) {
     await store.load()
     const cfg = store.get()
 
+    // 本地代理/镜像常带自签证书；勾选后忽略证书校验（不校验证书有安全风险）
+    if (cfg.github.allowInsecureTls) {
+      process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
+    }
+
     harness = buildHarnessManager(cfg)
     logger = new RollingLogger(join(userData, 'harness.log'))
     const backup = createBackupService(userData, cfg.harness.dataDir)
