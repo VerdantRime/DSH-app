@@ -40,6 +40,7 @@ let treeWidth = 200
 let aiWidth = 320
 let outputHeight = 160
 let bottomRef: HTMLElement | null = null
+let highlightPath: string | null = null
 let lastAiCode: string | null = null
 let lastAiRange: monaco.Range | null = null
 let aiHistory: ChatTurn[] = []
@@ -401,7 +402,18 @@ async function renderTree(): Promise<void> {
         ev.preventDefault()
         showContextMenu(ev.clientX, ev.clientY, treeContextItems(e))
       })
+      if (highlightPath === e.path) row.classList.add('ide-tree-row-active')
       list.appendChild(row)
+    }
+    const active = list.querySelector('.ide-tree-row-active') as HTMLElement | null
+    if (active) {
+      active.scrollIntoView({ block: 'center' })
+      if (highlightPath) {
+        const p = highlightPath
+        highlightPath = null
+        setTimeout(() => active.classList.remove('ide-tree-row-active'), 2400)
+        void p
+      }
     }
   } catch (e) { list.replaceChildren(h('div', 'gh-error', '读取目录失败')) }
 }
@@ -658,9 +670,10 @@ function revealInTree(): void {
   if (!treeRoot) { window.alert('请先点工具栏「打开文件夹」打开一个项目文件夹，再使用「在文件树中定位」'); return }
   if (!tab.path.startsWith(treeRoot)) { window.alert('当前文件不在已打开的项目文件夹内'); return }
   treeDir = parentDir(tab.path)
+  highlightPath = tab.path
   document.getElementById('ide-tree')?.classList.remove('hidden')
   void renderTree()
-  flashStatus('已定位到：' + treeDir)
+  flashStatus('已定位到：' + tab.path)
 }
 
 function registerContextActions(): void {

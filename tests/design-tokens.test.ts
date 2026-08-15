@@ -70,6 +70,11 @@ describe('设计令牌（依据 awesome-design-md 规范）', () => {
     expect(base).toContain('[data-theme=\'anime\'] .btn')
   })
 
+  it('文件树定位高亮样式存在', () => {
+    expect(base).toContain('.ide-tree-row-active')
+    expect(base).toContain('@keyframes tree-flash')
+  })
+
   it('主按钮使用品牌蓝渐变', () => {
     expect(base).toContain('.btn.primary')
     expect(base).toContain('var(--brand-blue)')
