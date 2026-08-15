@@ -1,7 +1,7 @@
 import { app, dialog, ipcMain, shell, type BrowserWindow } from 'electron'
 import { IPC } from '../shared/types'
 import { translateMarkdown } from './translate'
-import { listDirEntries, readTextFile, writeTextFile } from './ide-files'
+import { listDirEntries, readFileWithPath, writeTextFile } from './ide-files'
 import { detectToolchains } from './toolchain'
 import { run } from './runner'
 import { tmpdir } from 'os'
@@ -54,7 +54,7 @@ export function registerIpc(deps: IpcDeps): void {
     const res = win ? await dialog.showSaveDialog(win, opts) : await dialog.showSaveDialog(opts)
     return res.canceled ? null : res.filePath ?? null
   })
-  ipcMain.handle(IPC.ideReadFile, (_e, p: string) => readTextFile(p))
+  ipcMain.handle(IPC.ideReadFile, (_e, p: string) => readFileWithPath(p))
   ipcMain.handle(IPC.ideListDir, (_e, p: string) => listDirEntries(p))
   ipcMain.handle(IPC.ideWriteFile, (_e, p: string, c: string) => writeTextFile(p, c))
   ipcMain.handle(IPC.ideDetectTools, () => detectToolchains())

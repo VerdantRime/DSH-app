@@ -1,5 +1,5 @@
 import { promises as fs } from 'fs'
-import { join } from 'path'
+import { join, dirname } from 'path'
 
 export interface DirEntry { name: string; path: string; type: 'file' | 'dir' }
 
@@ -22,6 +22,12 @@ export async function readTextFile(path: string): Promise<string> {
   return fs.readFile(path, 'utf-8')
 }
 
+/** 读取并带路径返回（前端契约）。 */
+export async function readFileWithPath(path: string): Promise<{ path: string; content: string }> {
+  return { path, content: await readTextFile(path) }
+}
+
 export async function writeTextFile(path: string, content: string): Promise<void> {
+  await fs.mkdir(dirname(path), { recursive: true })
   await fs.writeFile(path, content, 'utf-8')
 }
