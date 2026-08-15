@@ -274,14 +274,23 @@ export class GithubClient implements IGithubClient {
     await this.octokit.rest.repos.createOrUpdateFileContents(payload as any)
   }
 
-  /** 读取文件原始字节（支持二进制下载）；超过 1MB 的仓库文件 API 不返回内容，会给出中文提示。 */
+  /** 读取文件原始字节（支持二进制下载）。小文件走 getContent；>1MB 改用 Git Blob 接口（上限 100MB）。 */
   async getRawFile(owner: string, repo: string, path: string): Promise<Buffer> {
     const res = await this.octokit.rest.repos.getContent({ owner, repo, path })
     const data = res.data as any
-    if (!data || data.encoding !== 'base64' || typeof data.content !== 'string') {
-      throw new Error('无法读取该文件：可能是空文件或超过 1MB 的大小限制')
+    if (!data || !data.path) throw new Error('文件不存在或无法读取')
+    if (data.encoding === 'base64' && typeof data.content === 'string') {
+      return Buffer.from(data.content, 'base64')
     }
-    return Buffer.from(data.content, 'base64')
+    // 超过 1MB：getContent 不再返回正文，改用 Git Blob 接口按 sha 拉取（二进制安全，上限 100MB）
+    const sha = data.sha
+    if (!sha) throw new Error('无法读取该文件（可能是目录或空文件）')
+    const blob = await this.octokit.rest.git.getBlob({ owner, repo, file_sha: sha })
+    const bd = blob.data as any
+    if (bd?.encoding === 'base64' && typeof bd.content === 'string') {
+      return Buffer.from(bd.content, 'base64')
+    }
+    throw new Error('文件过大（超过 100MB）或为 LFS 文件，请在网页端下载')
   }
 
   /** README（任意大小写文件名均可命中），仓库没有 README 时返回 null。 */

@@ -396,7 +396,7 @@ async function downloadSelected(): Promise<void> {
     const dest = await window.api.githubPickSaveDir()
     if (!dest) return
     const res = await window.api.githubDownloadFiles(currentRepo.owner, currentRepo.repo, uniq, dest)
-    window.alert('已下载 ' + res.saved + ' 个文件' + (res.skipped ? '（跳过 ' + res.skipped + ' 个，可能超过 1MB）' : '') + '\n保存到：' + dest)
+    window.alert('已下载 ' + res.saved + ' 个文件' + (res.skipped ? '（跳过 ' + res.skipped + ' 个，可能超过 100MB 或为 LFS 文件）' : '') + '\n保存到：' + dest)
     selectedFiles.clear()
     selectedDirs.clear()
     void loadFiles()

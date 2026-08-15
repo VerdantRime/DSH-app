@@ -161,10 +161,17 @@ describe('GithubClient 端点', () => {
     expect([...buf]).toEqual([0, 1, 2, 255])
   })
 
-  it('getRawFile 超过 1MB（无 content）给出中文错误', async () => {
-    const fake = { rest: { repos: { getContent: async () => ({ data: { path: 'big.bin', size: 2000000 } }) } } }
+  it('getRawFile 大文件（>1MB）改用 Git Blob 接口下载', async () => {
+    const fake = { rest: { repos: { getContent: async () => ({ data: { path: 'big.bin', sha: 'sha1', size: 2000000 } }) }, git: { getBlob: async () => ({ data: { encoding: 'base64', content: Buffer.from([9, 8, 7]).toString('base64') } }) } } }
     const c = new GithubClient('tok', { octokit: fake as any })
-    await expect(c.getRawFile('o', 'r', 'big.bin')).rejects.toThrow('1MB')
+    const buf = await c.getRawFile('o', 'r', 'big.bin')
+    expect([...buf]).toEqual([9, 8, 7])
+  })
+
+  it('getRawFile 超过 100MB 或 LFS 给出中文提示', async () => {
+    const fake = { rest: { repos: { getContent: async () => ({ data: { path: 'huge.bin', sha: 'sha2', size: 200000000 } }) }, git: { getBlob: async () => ({ data: {} }) } } }
+    const c = new GithubClient('tok', { octokit: fake as any })
+    await expect(c.getRawFile('o', 'r', 'huge.bin')).rejects.toThrow('100MB')
   })
 
   it('getReadme 解码 base64 内容', async () => {
