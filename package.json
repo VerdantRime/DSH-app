@@ -1,6 +1,6 @@
 {
   "name": "dsh-workdesk",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "DeepSeek Harness 桌面工作台",
   "main": "out/main/index.js",
   "author": "Mao",
