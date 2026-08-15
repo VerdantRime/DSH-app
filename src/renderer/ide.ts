@@ -43,6 +43,8 @@ let bottomRef: HTMLElement | null = null
 let highlightPath: string | null = null
 let lastAiCode: string | null = null
 let lastAiRange: monaco.Range | null = null
+let inlineDecoIds: string[] = []
+let inlineDecoModel: monaco.editor.ITextModel | null = null
 let aiHistory: ChatTurn[] = []
 let lastAiAction: 'explain' | 'debug' | 'optimize' | 'chat' = 'chat'
 let aiModel = ''
@@ -557,6 +559,9 @@ function applyRange(text: string, targetRange: monaco.Range | null): void {
 }
 
 function closeInlineReview(): void {
+  inlineDecoModel?.deltaDecorations(inlineDecoIds, [])
+  inlineDecoIds = []
+  inlineDecoModel = null
   document.getElementById('ide-inline-review')?.remove()
 }
 
@@ -569,15 +574,18 @@ function startInlineReview(oldText: string, newText: string, targetRange: monaco
   if (hunks.length === 0) { flashStatus('AI 返回的代码与当前一致，无需修改'); return }
   const accepted = hunks.map(() => false)
   const decided = hunks.map(() => false)
-  let decoIds: string[] = []
+  let contentChanged = false
+  inlineDecoModel = model
+  inlineDecoIds = []
   const base = targetRange ? targetRange.startLineNumber - 1 : 0
   const drawDecos = (): void => {
+    if (contentChanged) return
     const ds: monaco.editor.IModelDeltaDecoration[] = []
     hunks.forEach((h, i) => {
       if (decided[i] || h.oldCount === 0) return
       ds.push({ range: new monaco.Range(base + h.oldStart + 1, 1, base + h.oldStart + h.oldCount, 1), options: { isWholeLine: true, className: 'ide-inline-removed' } })
     })
-    decoIds = model.deltaDecorations(decoIds, ds)
+    inlineDecoIds = model.deltaDecorations(inlineDecoIds, ds)
   }
   drawDecos()
 
@@ -587,9 +595,8 @@ function startInlineReview(oldText: string, newText: string, targetRange: monaco
   head.appendChild(h('span', '', '审查 AI 修改'))
   const acceptAll = h('button', 'btn primary', '全部接受')
   acceptAll.addEventListener('click', () => {
-    model.deltaDecorations(decoIds, [])
-    applyRange(applyHunks(oldText, hunks, hunks.map(() => true)), targetRange)
     closeInlineReview()
+    applyRange(applyHunks(oldText, hunks, hunks.map(() => true)), targetRange)
     lastAiCode = null
     lastAiRange = null
     aiApplyEl().classList.add('hidden')
@@ -597,7 +604,7 @@ function startInlineReview(oldText: string, newText: string, targetRange: monaco
   })
   head.appendChild(acceptAll)
   const closeBtn = h('button', 'ide-inline-close', '×')
-  closeBtn.addEventListener('click', () => { model.deltaDecorations(decoIds, []); closeInlineReview() })
+  closeBtn.addEventListener('click', () => closeInlineReview())
   head.appendChild(closeBtn)
   panel.appendChild(head)
 
@@ -615,7 +622,9 @@ function startInlineReview(oldText: string, newText: string, targetRange: monaco
     apply.addEventListener('click', () => {
       accepted[i] = true
       decided[i] = true
-      model.deltaDecorations(decoIds, [])
+      contentChanged = true
+      inlineDecoModel?.deltaDecorations(inlineDecoIds, [])
+      inlineDecoIds = []
       applyRange(applyHunks(oldText, hunks, accepted), targetRange)
       row.classList.add('ide-inline-done')
     })
