@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parentPath, fileNameOf, joinRepoPath, validateNewFileName, breadcrumbSegments, formatFileSize } from '../src/renderer/github-utils'
+import { parentPath, fileNameOf, joinRepoPath, validateNewFileName, breadcrumbSegments, formatFileSize, isMarkdownFile } from '../src/renderer/github-utils'
 
 describe('github-utils 路径工具', () => {
   it('parentPath 返回上级目录', () => {
@@ -26,6 +26,14 @@ describe('github-utils 路径工具', () => {
       { label: 'a', path: 'docs/a' },
       { label: 'b', path: 'docs/a/b' }
     ])
+  })
+
+  it('isMarkdownFile 识别常见 md 扩展名', () => {
+    expect(isMarkdownFile('README.md')).toBe(true)
+    expect(isMarkdownFile('docs/a.MD')).toBe(true)
+    expect(isMarkdownFile('a.markdown')).toBe(true)
+    expect(isMarkdownFile('a.ts')).toBe(false)
+    expect(isMarkdownFile('a.md.txt')).toBe(false)
   })
 
   it('formatFileSize 人性化单位换算', () => {

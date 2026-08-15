@@ -40,6 +40,11 @@ export function breadcrumbSegments(path: string): { label: string; path: string 
   return out
 }
 
+/** 判断文件是否为 Markdown（.md/.markdown/.mdown/.mkd）。 */
+export function isMarkdownFile(name: string): boolean {
+  return /\.(md|markdown|mdown|mkd)$/i.test(name)
+}
+
 /** 文件大小人性化显示：B / KB / MB / GB。 */
 export function formatFileSize(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes < 0) return ''

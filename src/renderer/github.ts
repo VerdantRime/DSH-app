@@ -10,7 +10,7 @@ import type {
 } from '../shared/types'
 import DOMPurify from 'dompurify'
 import { renderMarkdown } from './markdown'
-import { parentPath, fileNameOf, joinRepoPath, validateNewFileName, breadcrumbSegments, formatFileSize } from './github-utils'
+import { parentPath, fileNameOf, joinRepoPath, validateNewFileName, breadcrumbSegments, formatFileSize, isMarkdownFile } from './github-utils'
 import { GITHUB_TOKEN_URL, TOKEN_HELP_STEPS } from './github-help'
 
 type ListMode = 'mine' | 'starred' | 'search'
@@ -403,7 +403,30 @@ async function loadFileContent(path: string): Promise<void> {
           .catch((e) => window.alert('删除失败：' + errMsg(e)))
       }))
       content.appendChild(bar)
-      content.appendChild(h('pre', 'gh-code', file.content))
+      if (isMarkdownFile(path)) {
+        const body = h('div', 'gh-readme')
+        const html = DOMPurify.sanitize(renderMarkdown(file.content))
+        let raw = false
+        const srcBtn = btn('源码', () => {
+          raw = !raw
+          refresh()
+        })
+        const refresh = (): void => {
+          srcBtn.classList.toggle('active', raw)
+          if (raw) {
+            body.className = 'gh-code'
+            body.textContent = file.content
+          } else {
+            body.className = 'gh-readme'
+            body.innerHTML = html
+          }
+        }
+        bar.appendChild(srcBtn)
+        content.appendChild(body)
+        refresh()
+      } else {
+        content.appendChild(h('pre', 'gh-code', file.content))
+      }
     } else {
       content.appendChild(h('div', 'gh-empty', '无法读取该文件'))
     }
