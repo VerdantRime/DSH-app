@@ -1,5 +1,6 @@
 import { spawn, spawnSync } from 'child_process'
-import { readdirSync, writeFileSync, mkdirSync } from 'fs'
+import { readdirSync, writeFileSync, mkdirSync, readFileSync } from 'fs'
+import { detectEncoding } from './ide-files'
 import { tmpdir } from 'os'
 import { join, dirname, basename } from 'path'
 import * as iconv from 'iconv-lite'
@@ -68,7 +69,7 @@ function quoteArg(a: string): string {
 /** 生成交互式运行的批处理内容（cd 到工作目录并停留）。 */
 export function buildBatchScript(program: string, args: string[], cwd: string): string {
   const line = [program, ...args].map(quoteArg).join(' ')
-  return '@echo off\r\ncd /d "' + cwd + '"\r\n' + line + '\r\necho.\r\necho [按任意键关闭]\r\npause >nul\r\n'
+  return '@echo off\r\ncd /d "' + cwd + '"\r\n' + line + '\r\necho.\r\necho [按任意键关闭]\r\npause >nul\r\nexit\r\n'
 }
 
 /** 用 start + 批处理可靠地弹出独立控制台窗口；批处理以 GBK 编码写入，中文路径不乱码。 */
@@ -94,15 +95,27 @@ function runPython(req: RunRequest): RunResult {
   return { ok: r.code === 0, output: r.out, exitCode: r.code, interactive: false }
 }
 
+function sourceIsGbk(path: string): boolean {
+  try {
+    return detectEncoding(readFileSync(path)) === 'gbk'
+  } catch {
+    return false
+  }
+}
+
 function runCpp(req: RunRequest): RunResult {
   const gpp = toolPath(req.tools?.gpp, 'g++.exe')
   const dir = dirname(req.targetPath)
   const exe = join(dir, basename(req.targetPath).replace(/\.[^.]+$/, '') + '.exe')
+  // 按源文件编码编译，并让可执行文件输出 GBK（匹配中文控制台），避免 printf 中文乱码
+  const charsetArgs = sourceIsGbk(req.targetPath)
+    ? ['-finput-charset=GBK', '-fexec-charset=GBK']
+    : ['-fexec-charset=GBK']
   // 先只编译当前文件；出现“未定义引用”（多文件项目）时，再把同目录源文件一起编译重试
-  let compile = runCapture(gpp, [req.targetPath, '-o', exe], dir, 60000)
+  let compile = runCapture(gpp, [req.targetPath, ...charsetArgs, '-o', exe], dir, 60000)
   if (compile.code !== 0 && isLinkError(compile.out)) {
     const files = projectSources(req.targetPath)
-    if (files.length > 1) compile = runCapture(gpp, [...files, '-o', exe], dir, 60000)
+    if (files.length > 1) compile = runCapture(gpp, [...files, ...charsetArgs, '-o', exe], dir, 60000)
   }
   if (compile.code !== 0) {
     return { ok: false, output: compile.out, exitCode: compile.code, interactive: false }

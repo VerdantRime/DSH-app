@@ -4,6 +4,7 @@ import { tmpdir } from 'os'
 import { join } from 'path'
 import { toolPath, projectSources, javaMainClass, decodeOutput, buildBatchScript, isLinkError, run, type RunResult } from '../src/main/runner'
 import { isInteractiveSource, usesConsoleApis, defaultRunFileName } from '../src/renderer/ide-utils'
+import * as iconv from 'iconv-lite'
 
 describe('runner 纯函数', () => {
   it('toolPath 解析目录/可执行/默认', () => {
@@ -28,12 +29,13 @@ describe('runner 纯函数', () => {
     expect(javaMainClass('C:\\x\\Main.java')).toBe('Main')
   })
 
-  it('buildBatchScript 包含 cd、命令与暂停（中文路径）', () => {
+  it('buildBatchScript 包含 cd、命令、暂停与 exit（跑完自动关窗）', () => {
     const bat = buildBatchScript('C:\\test\\后续法建链表.exe', [], 'C:\\test')
     expect(bat).toContain('@echo off')
     expect(bat).toContain('cd /d')
     expect(bat).toContain('后续法建链表.exe')
     expect(bat).toContain('pause')
+    expect(bat).toContain('exit')
   })
 
   it('isLinkError 识别未定义引用链接错误', () => {
@@ -93,6 +95,16 @@ describe('runner 真实编译运行（依赖本机工具链）', () => {
     const res: RunResult = run({ language: 'cpp', targetPath: join(dir, 'main.cpp'), interactive: false })
     expect(res.ok).toBe(true)
     expect(res.output).toContain('5')
+    await fs.rm(dir, { recursive: true, force: true })
+  }, 30000)
+
+  it('GBK 源文件中文正常输出（不产生乱码）', async () => {
+    const dir = await fs.mkdtemp(join(tmpdir(), 'run-gbk-'))
+    const f = join(dir, 'main.c')
+    await fs.writeFile(f, iconv.encode('#include <stdio.h>\nint main(){ printf("天天开心呀\\n"); return 0; }\n', 'gbk'))
+    const res: RunResult = run({ language: 'cpp', targetPath: f, interactive: false })
+    expect(res.ok).toBe(true)
+    expect(res.output).toContain('天天开心呀')
     await fs.rm(dir, { recursive: true, force: true })
   }, 30000)
 
