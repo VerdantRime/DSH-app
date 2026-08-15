@@ -45,6 +45,22 @@ export function githubTabKey(owner: string, repo: string, path: string): string 
   return 'github:' + owner + '/' + repo + '/' + path
 }
 
+export interface ChatTurn { role: 'user' | 'assistant'; content: string }
+
+/** 组装发送给 headless 智能体的完整提示（代码上下文 + 历史 + 最新问题）。 */
+export function buildChatPrompt(history: ChatTurn[], question: string, code: string, language: string): string {
+  const lines: string[] = ['你是一名代码助手。']
+  if (code && code.trim()) {
+    lines.push('', '当前代码（语言 ' + language + '）：', '```', code, '```')
+  }
+  if (history.length) {
+    lines.push('', '对话历史：')
+    for (const t of history) lines.push((t.role === 'user' ? '用户' : '助手') + '：' + t.content)
+  }
+  lines.push('', '请回答用户最新问题（中文 Markdown；若需要给出代码，用一个 fenced code block 包裹）：', question)
+  return lines.join('\n')
+}
+
 /** 从完整路径取标签标题。 */
 export function tabTitleFromPath(path: string): string {
   const i = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'))

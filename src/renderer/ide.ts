@@ -1,5 +1,5 @@
 import monaco from './monaco-setup'
-import { languageForFile, tabTitleFromPath, isInteractiveSource, defaultRunFileName, extractCodeBlock, githubTabKey, type IdeLanguage } from './ide-utils'
+import { languageForFile, tabTitleFromPath, isInteractiveSource, defaultRunFileName, extractCodeBlock, githubTabKey, buildChatPrompt, type ChatTurn, type IdeLanguage } from './ide-utils'
 import { githubErrorHint } from './github-utils'
 import DOMPurify from 'dompurify'
 import { renderMarkdown } from './markdown'
@@ -36,6 +36,7 @@ let treeRoot: string | null = null
 let treeDir = ''
 let lastAiCode: string | null = null
 let lastAiRange: monaco.Range | null = null
+let aiHistory: ChatTurn[] = []
 const AI_MODELS: { id: string; label: string }[] = [
   { id: '', label: '默认（跟随 DSH）' },
   { id: 'deepseek-chat', label: 'DeepSeek V3 (chat)' },
@@ -380,52 +381,74 @@ function showOutput(text: string): void {
   p.apply.classList.add('hidden')
 }
 
-function aiEls(): { result: HTMLElement; apply: HTMLElement } {
-  return {
-    result: document.getElementById('ide-ai-result') as HTMLElement,
-    apply: document.getElementById('ide-ai-apply') as HTMLElement
+function aiHistoryEl(): HTMLElement { return document.getElementById('ide-ai-history') as HTMLElement }
+function aiInputEl(): HTMLInputElement { return document.getElementById('ide-ai-input') as HTMLInputElement }
+function aiApplyEl(): HTMLElement { return document.getElementById('ide-ai-apply') as HTMLElement }
+
+function renderAiHistory(): void {
+  const el = aiHistoryEl()
+  el.replaceChildren()
+  if (aiHistory.length === 0) {
+    el.appendChild(h('div', 'ide-ai-empty', '选中代码后点「解释 / 找错 / 优化」，或在下方输入问题对话'))
+    return
   }
-}
-
-function showAiResult(text: string, action: 'explain' | 'debug' | 'optimize'): void {
-  const els = aiEls()
-  els.result.innerHTML = DOMPurify.sanitize(renderMarkdown(text))
-  els.apply.classList.add('hidden')
-  if (action === 'optimize') {
-    const code = extractCodeBlock(text)
-    if (code) {
-      lastAiCode = code
-      els.apply.classList.remove('hidden')
-    }
+  for (const m of aiHistory) {
+    const b = h('div', 'ide-ai-msg ide-ai-' + m.role)
+    if (m.role === 'assistant') b.innerHTML = DOMPurify.sanitize(renderMarkdown(m.content))
+    else b.textContent = m.content
+    el.appendChild(b)
   }
+  el.scrollTop = el.scrollHeight
 }
 
-function showAiLoading(): void {
-  const els = aiEls()
-  els.result.textContent = 'AI 思考中…（首次启动较慢，请稍候）'
-  els.apply.classList.add('hidden')
-}
-
-async function aiAsk(action: 'explain' | 'debug' | 'optimize'): Promise<void> {
+function currentCodeContext(): string {
   const tab = activeTab()
-  if (!tab || !editor) return
+  if (!tab || !editor) return ''
   const sel = editor.getSelection()
-  let code = tab.model.getValue()
   if (sel && !sel.isEmpty()) {
-    code = tab.model.getValueInRange(sel)
     lastAiRange = sel
-  } else {
-    lastAiRange = null
+    return tab.model.getValueInRange(sel)
   }
+  lastAiRange = null
+  return tab.model.getValue()
+}
+
+async function sendAiChat(question: string): Promise<void> {
+  const q = question.trim()
+  if (!q) return
+  aiHistory.push({ role: 'user', content: q })
+  renderAiHistory()
+  const tab = activeTab()
+  const lang = tab ? (runLanguage(tab) ?? 'plaintext') : 'plaintext'
+  const prompt = buildChatPrompt(aiHistory, q, currentCodeContext(), lang)
+  const waiting = h('div', 'ide-ai-msg ide-ai-assistant', '思考中…')
+  aiHistoryEl().appendChild(waiting)
+  aiHistoryEl().scrollTop = aiHistoryEl().scrollHeight
   try {
-    const tempPath = await window.api.ideRunTemp('ai_snippet.txt')
-    await window.api.ideWriteFile(tempPath, code)
-    showAiLoading()
-    const res = await window.api.aiAsk({ action, codePath: tempPath, language: runLanguage(tab) ?? 'plaintext', model: aiModel || undefined })
-    showAiResult(res.text, action)
+    const promptPath = await window.api.ideRunTemp('ai_prompt.txt')
+    await window.api.ideWriteFile(promptPath, prompt)
+    const res = await window.api.aiAsk({ promptPath, model: aiModel || undefined })
+    waiting.remove()
+    aiHistory.push({ role: 'assistant', content: res.text })
+    renderAiHistory()
+    const code = extractCodeBlock(res.text)
+    if (code) { lastAiCode = code; aiApplyEl().classList.remove('hidden') }
+    else aiApplyEl().classList.add('hidden')
   } catch (e) {
-    showAiResult('AI 失败：' + (e instanceof Error ? e.message : String(e)), action)
+    waiting.remove()
+    aiHistory.push({ role: 'assistant', content: 'AI 失败：' + (e instanceof Error ? e.message : String(e)) })
+    renderAiHistory()
   }
+}
+
+function quickAsk(action: 'explain' | 'debug' | 'optimize'): void {
+  const q =
+    action === 'explain'
+      ? '请解释这段代码的功能与关键逻辑（简明清晰）'
+      : action === 'debug'
+        ? '请找出这段代码中的 bug 或潜在问题，并说明原因与修复建议'
+        : '请优化这段代码，使其更简洁、高效、可读；先简要列出优化点，再在一个 fenced code block 里给出完整优化后的代码'
+  void sendAiChat(q)
 }
 
 function applyAiCode(): void {
@@ -438,7 +461,7 @@ function applyAiCode(): void {
   }
   lastAiCode = null
   lastAiRange = null
-  aiEls().apply.classList.add('hidden')
+  aiApplyEl().classList.add('hidden')
 }
 
 async function runActive(): Promise<void> {
@@ -546,22 +569,34 @@ function buildDom(): void {
   const aiActions = h('div', 'ide-ai-actions')
   const mkAi = (label: string, action: 'explain' | 'debug' | 'optimize'): HTMLElement => {
     const b = h('button', 'btn', label)
-    b.addEventListener('click', () => void aiAsk(action))
+    b.addEventListener('click', () => quickAsk(action))
     return b
   }
   aiActions.appendChild(mkAi('解释', 'explain'))
   aiActions.appendChild(mkAi('找错', 'debug'))
   aiActions.appendChild(mkAi('优化', 'optimize'))
   aiPanel.appendChild(aiActions)
-  const aiResult = h('div', 'gh-readme ide-ai-result', '选中代码后点击「解释 / 找错 / 优化」')
-  aiResult.id = 'ide-ai-result'
-  aiPanel.appendChild(aiResult)
+  const aiHistoryBox = h('div', 'ide-ai-history')
+  aiHistoryBox.id = 'ide-ai-history'
+  aiPanel.appendChild(aiHistoryBox)
   const aiApply = h('div', 'ide-apply-row hidden')
   aiApply.id = 'ide-ai-apply'
   const applyBtn2 = h('button', 'btn primary', '应用到编辑器')
   applyBtn2.addEventListener('click', () => applyAiCode())
   aiApply.appendChild(applyBtn2)
   aiPanel.appendChild(aiApply)
+  const inputRow = h('div', 'ide-ai-input-row')
+  const chatInput = document.createElement('input')
+  chatInput.id = 'ide-ai-input'
+  chatInput.className = 'gh-search'
+  chatInput.placeholder = '向 AI 提问，回车发送…'
+  const sendBtn = h('button', 'btn primary', '发送')
+  const doSend = (): void => { const v = chatInput.value; chatInput.value = ''; void sendAiChat(v) }
+  chatInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') doSend() })
+  sendBtn.addEventListener('click', doSend)
+  inputRow.appendChild(chatInput)
+  inputRow.appendChild(sendBtn)
+  aiPanel.appendChild(inputRow)
   main.appendChild(aiPanel)
   panel.appendChild(main)
 
@@ -597,4 +632,5 @@ export function initIde(): void {
   const first = newTab('未命名', null, '', 'plaintext')
   switchTab(first.id)
   updateGithubButtons()
+  renderAiHistory()
 }

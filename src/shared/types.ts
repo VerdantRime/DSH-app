@@ -261,7 +261,7 @@ export interface WorkdeskApi {
   ideDetectTools(): Promise<ToolchainReport>
   ideRun(req: IdeRunRequest): Promise<IdeRunResult>
   ideRunTemp(fileName: string): Promise<string>
-  aiAsk(req: { action: 'explain' | 'debug' | 'optimize'; codePath: string; language: string; model?: string }): Promise<{ text: string }>
+  aiAsk(req: { promptPath: string; model?: string }): Promise<{ text: string }>
   quitReal(): Promise<void>
   showWindow(): Promise<void>
   onNavigate(cb: (panelId: string) => void): () => void

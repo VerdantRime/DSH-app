@@ -118,7 +118,12 @@ body {
 .ide-ai-head { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-bottom: 1px solid var(--border); }
 .ide-ai-title { font-size: 13px; font-weight: 700; color: var(--accent-strong); white-space: nowrap; }
 .ide-ai-actions { display: flex; gap: 6px; padding: 8px 10px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
-.ide-ai-result { flex: 1; min-height: 0; overflow: auto; padding: 10px 12px; margin: 0; border-top: none; }
+.ide-ai-history { flex: 1; min-height: 0; overflow: auto; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+.ide-ai-empty { color: var(--fg-muted); font-size: 13px; padding: 12px 0; }
+.ide-ai-msg { max-width: 100%; padding: 8px 11px; border-radius: var(--radius-md); font-size: 13px; line-height: 1.55; word-break: break-word; }
+.ide-ai-msg.ide-ai-user { align-self: flex-end; background: var(--accent-soft); color: var(--fg); }
+.ide-ai-msg.ide-ai-assistant { align-self: flex-start; background: var(--card-bg); border: 1px solid var(--border); }
+.ide-ai-input-row { display: flex; gap: 6px; padding: 8px 10px; border-top: 1px solid var(--border); }
 .ide-tab-close { margin-left: 8px; color: var(--fg-muted); opacity: 0; }
 .ide-tab:hover .ide-tab-close { opacity: 1; }
 .ide-tab-close:hover { color: #cf222e; }

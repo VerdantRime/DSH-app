@@ -6,15 +6,9 @@ import { extractCodeBlock } from '../renderer/ide-utils'
 
 export type AiAction = 'explain' | 'debug' | 'optimize'
 
-/** 构建给 headless 智能体的单行任务（代码写入临时文件，任务里引用路径，避免命令行换行/引号问题）。 */
-export function buildAiTask(action: AiAction, codePath: string, language: string): string {
-  const verb =
-    action === 'explain'
-      ? '解释这段代码的功能与关键逻辑，要求简明清晰'
-      : action === 'debug'
-        ? '找出代码中的 bug 或潜在问题，说明原因并给出修复建议'
-        : '优化这段代码，使其更简洁、高效、可读；请先简要列出优化点，然后在回答末尾用一个 fenced code block（```）给出完整优化后的代码'
-  return '你是代码助手。请读取文件 ' + codePath + ' 中的代码（语言：' + language + '），然后' + verb + '。只输出最终结果（中文 Markdown），不要描述过程。'
+/** 构建给 headless 智能体的单行任务：让它读取 prompt 文件并执行（完整指令/代码/历史都在文件里，避免命令行换行/引号问题）。 */
+export function buildPromptTask(promptPath: string): string {
+  return '你是代码助手。请读取文件 ' + promptPath + ' 中的完整指令并严格按指令回答（只输出最终结果，中文 Markdown，不要描述过程）。'
 }
 
 export { extractCodeBlock } from '../renderer/ide-utils'

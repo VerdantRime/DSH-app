@@ -1,15 +1,25 @@
 import { describe, it, expect } from 'vitest'
-import { buildAiTask, withModel } from '../src/main/ai'
-import { extractCodeBlock } from '../src/renderer/ide-utils'
+import { buildPromptTask, withModel } from '../src/main/ai'
+import { extractCodeBlock, buildChatPrompt } from '../src/renderer/ide-utils'
 
 describe('AI 任务构建与结果解析', () => {
-  it('buildAiTask 包含动作与文件路径', () => {
-    const t = buildAiTask('explain', 'C:\\x\\main.py', 'python')
-    expect(t).toContain('C:\\x\\main.py')
-    expect(t).toContain('解释')
-    const o = buildAiTask('optimize', 'C:\\x\\main.cpp', 'cpp')
-    expect(o).toContain('优化')
-    expect(o).toContain('fenced code block')
+  it('buildPromptTask 引用 prompt 文件', () => {
+    const t = buildPromptTask('C:\\x\\ai_prompt.txt')
+    expect(t).toContain('C:\\x\\ai_prompt.txt')
+    expect(t).toContain('读取')
+  })
+
+  it('buildChatPrompt 包含代码上下文、历史与最新问题', () => {
+    const p = buildChatPrompt(
+      [{ role: 'user', content: '这是什么？' }, { role: 'assistant', content: '这是主函数' }],
+      '再解释一遍',
+      'int main() { return 0; }',
+      'cpp'
+    )
+    expect(p).toContain('int main() { return 0; }')
+    expect(p).toContain('用户：这是什么？')
+    expect(p).toContain('助手：这是主函数')
+    expect(p).toContain('再解释一遍')
   })
 
   it('withModel 覆盖模型并保留其它字段', () => {
