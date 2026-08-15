@@ -55,7 +55,7 @@ function renderGeneral(): HTMLElement {
   const s = section('通用')
   const themeRow = h('div', 'set-row')
   themeRow.appendChild(h('span', 'set-label', '主题'))
-  const modes: ThemeMode[] = ['system', 'light', 'dark']
+  const modes: ThemeMode[] = ['system', 'light', 'dark', 'anime']
   for (const m of modes) {
     const b = btn(themeLabel(m), () => {
       if (!cfg) return

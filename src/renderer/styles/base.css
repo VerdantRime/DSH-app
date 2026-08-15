@@ -280,6 +280,24 @@ body {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.35; }
 }
+/* ============ 二次元主题装饰（糖果按钮 + 星点 + 渐变） ============ */
+[data-theme='anime'] body {
+  background:
+    radial-gradient(circle at 12% 18%, rgba(246, 168, 200, 0.22), transparent 42%),
+    radial-gradient(circle at 88% 12%, rgba(91, 123, 208, 0.20), transparent 45%),
+    radial-gradient(circle at 72% 88%, rgba(245, 200, 76, 0.18), transparent 42%),
+    var(--bg);
+}
+[data-theme='anime'] .btn { border-radius: var(--radius-pill); }
+[data-theme='anime'] .btn.primary { background: linear-gradient(135deg, var(--brand-blue), var(--anime-pink-deep)); border-color: transparent; }
+[data-theme='anime'] .btn.primary:hover:not(:disabled) { background: linear-gradient(135deg, var(--brand-indigo), var(--anime-pink-deep)); }
+[data-theme='anime'] .nav-item { border-radius: var(--radius-pill); }
+[data-theme='anime'] .nav-item.active { background: linear-gradient(135deg, var(--brand-blue), var(--anime-pink-deep)); }
+[data-theme='anime'] .gh-card, [data-theme='anime'] .set-section { border-radius: var(--radius-xl); }
+[data-theme='anime'] .ide-tab.active { border-bottom-color: var(--anime-pink-deep); color: var(--anime-pink-deep); }
+[data-theme='anime'] .brand-title { color: var(--brand-indigo); }
+[data-theme='anime'] .gh-file-icon.dir { color: var(--brand-blue); }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.001ms !important;

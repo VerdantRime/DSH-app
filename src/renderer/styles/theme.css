@@ -56,3 +56,26 @@
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.40);
 }
+
+/* ============ 二次元主题（蓝白粉 + 星点黄，贴合蓝发女仆图标） ============ */
+[data-theme='anime'] {
+  --bg: #EAF0FB;
+  --fg: #2B3550;
+  --fg-muted: #7B86A8;
+  --sidebar-bg: #FFFFFF;
+  --card-bg: #FFFFFF;
+  --border: #DDE5F6;
+  --hover: #EFF4FF;
+  --accent: #5B7BD0;
+  --accent-strong: #4C5F98;
+  --accent-soft: #EDF2FF;
+  --brand-navy: #2B3550;
+  --brand-indigo: #4C5F98;
+  --brand-blue: #5B7BD0;
+  --brand-sky: #8AA0D8;
+  --brand-star: #F5C84C;
+  --anime-pink: #F6A8C8;
+  --anime-pink-deep: #E97AB0;
+  --shadow-sm: 0 1px 2px rgba(76, 95, 152, 0.10);
+  --shadow-md: 0 6px 20px rgba(76, 95, 152, 0.16);
+}

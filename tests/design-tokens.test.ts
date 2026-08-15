@@ -64,6 +64,12 @@ describe('设计令牌（依据 awesome-design-md 规范）', () => {
     expect(base).toContain('--brand-blue')
   })
 
+  it('二次元主题存在蓝白粉调色板与糖果按钮', () => {
+    expect(theme).toContain("data-theme='anime'")
+    expect(base).toContain('--anime-pink-deep')
+    expect(base).toContain('[data-theme=\'anime\'] .btn')
+  })
+
   it('主按钮使用品牌蓝渐变', () => {
     expect(base).toContain('.btn.primary')
     expect(base).toContain('var(--brand-blue)')

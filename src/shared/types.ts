@@ -1,4 +1,4 @@
-export type ThemeMode = 'system' | 'light' | 'dark'
+export type ThemeMode = 'system' | 'light' | 'dark' | 'anime'
 
 export interface WindowBounds {
   x: number
