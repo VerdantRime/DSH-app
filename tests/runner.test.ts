@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { promises as fs } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
-import { toolPath, projectSources, javaMainClass, run, type RunResult } from '../src/main/runner'
+import { toolPath, projectSources, javaMainClass, decodeOutput, run, type RunResult } from '../src/main/runner'
 import { isInteractiveSource, defaultRunFileName } from '../src/renderer/ide-utils'
 
 describe('runner 纯函数', () => {
@@ -26,6 +26,14 @@ describe('runner 纯函数', () => {
 
   it('javaMainClass 去掉扩展名', () => {
     expect(javaMainClass('C:\\x\\Main.java')).toBe('Main')
+  })
+
+  it('decodeOutput 正确解码 UTF-8 与 GBK（中文不乱码）', () => {
+    expect(decodeOutput(Buffer.from('hello', 'utf-8'))).toBe('hello')
+    expect(decodeOutput(Buffer.from('中文输出', 'utf-8'))).toBe('中文输出')
+    // '你' 的 GBK 编码为 0xC4 0xE3，不是合法 UTF-8，应回退 GBK 解码
+    expect(decodeOutput(Buffer.from([0xc4, 0xe3]))).toBe('你')
+    expect(decodeOutput(null)).toBe('')
   })
 })
 

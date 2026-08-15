@@ -31,9 +31,26 @@ export function javaMainClass(targetPath: string): string {
   return basename(targetPath).replace(/\.java$/i, '')
 }
 
-function capture(cmd: string, args: string[], cwd: string): { code: number | null; out: string } {
-  const r = spawnSync(cmd, args, { cwd, encoding: 'utf-8', timeout: 30000 })
-  return { code: r.status, out: (r.stdout ?? '') + (r.stderr ?? '') }
+/** 解码子进程输出：先按 UTF-8 严格解码，失败回退 GBK（中文 Windows 控制台/源文件常见编码）。 */
+export function decodeOutput(buf: Buffer | string | null | undefined): string {
+  if (!buf) return ''
+  const b = Buffer.isBuffer(buf) ? buf : Buffer.from(String(buf), 'binary')
+  if (b.length === 0) return ''
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(b)
+  } catch {
+    /* 非 UTF-8，回退 GBK */
+  }
+  try {
+    return new TextDecoder('gbk').decode(b)
+  } catch {
+    return b.toString('utf-8')
+  }
+}
+
+function runCapture(cmd: string, args: string[], cwd: string, timeoutMs = 30000): { code: number | null; out: string } {
+  const r = spawnSync(cmd, args, { cwd, timeout: timeoutMs, windowsHide: true })
+  return { code: r.status, out: decodeOutput(r.stdout) + decodeOutput(r.stderr) }
 }
 
 function consoleRun(cmdline: string): void {
@@ -47,7 +64,7 @@ function runPython(req: RunRequest): RunResult {
     consoleRun('"' + python + '" "' + req.targetPath + '"')
     return { ok: true, output: '', exitCode: null, interactive: true }
   }
-  const r = capture(python, [req.targetPath], dirname(req.targetPath))
+  const r = runCapture(python, [req.targetPath], dirname(req.targetPath))
   return { ok: r.code === 0, output: r.out, exitCode: r.code, interactive: false }
 }
 
@@ -56,15 +73,15 @@ function runCpp(req: RunRequest): RunResult {
   const dir = dirname(req.targetPath)
   const files = req.multiFile ? projectSources(req.targetPath) : [req.targetPath]
   const exe = join(dir, basename(req.targetPath).replace(/\.[^.]+$/, '') + '.exe')
-  const compile = spawnSync(gpp, [...files, '-o', exe], { cwd: dir, encoding: 'utf-8', timeout: 60000 })
-  if (compile.status !== 0) {
-    return { ok: false, output: (compile.stdout ?? '') + (compile.stderr ?? ''), exitCode: compile.status, interactive: false }
+  const compile = runCapture(gpp, [...files, '-o', exe], dir, 60000)
+  if (compile.code !== 0) {
+    return { ok: false, output: compile.out, exitCode: compile.code, interactive: false }
   }
   if (req.interactive) {
     consoleRun('"' + exe + '"')
     return { ok: true, output: '', exitCode: null, interactive: true }
   }
-  const r = capture(exe, [], dir)
+  const r = runCapture(exe, [], dir)
   return { ok: r.code === 0, output: r.out, exitCode: r.code, interactive: false }
 }
 
@@ -73,15 +90,15 @@ function runJava(req: RunRequest): RunResult {
   const java = toolPath(req.tools?.java, 'java.exe')
   const dir = dirname(req.targetPath)
   const cls = javaMainClass(req.targetPath)
-  const compile = spawnSync(javac, [req.targetPath], { cwd: dir, encoding: 'utf-8', timeout: 60000 })
-  if (compile.status !== 0) {
-    return { ok: false, output: (compile.stdout ?? '') + (compile.stderr ?? ''), exitCode: compile.status, interactive: false }
+  const compile = runCapture(javac, [req.targetPath], dir, 60000)
+  if (compile.code !== 0) {
+    return { ok: false, output: compile.out, exitCode: compile.code, interactive: false }
   }
   if (req.interactive) {
     consoleRun('"' + java + '" -cp "' + dir + '" ' + cls)
     return { ok: true, output: '', exitCode: null, interactive: true }
   }
-  const r = capture(java, ['-cp', dir, cls], dir)
+  const r = runCapture(java, ['-cp', dir, cls], dir)
   return { ok: r.code === 0, output: r.out, exitCode: r.code, interactive: false }
 }
 
