@@ -61,6 +61,7 @@ const api: WorkdeskApi = {
   ideSaveCustomWallpaper: (src) => ipcRenderer.invoke(IPC.ideSaveCustomWallpaper, src),
   ideDetectTools: () => ipcRenderer.invoke(IPC.ideDetectTools),
   ideRun: (req) => ipcRenderer.invoke(IPC.ideRun, req),
+  ideCompile: (req) => ipcRenderer.invoke(IPC.ideCompile, req),
   ideRunTemp: (fileName) => ipcRenderer.invoke(IPC.ideRunTemp, fileName),
   aiAsk: (req) => ipcRenderer.invoke(IPC.aiAsk, req),
   aiListModels: () => ipcRenderer.invoke(IPC.aiListModels),

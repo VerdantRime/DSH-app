@@ -3,7 +3,7 @@ import { IPC } from '../shared/types'
 import { translateMarkdown } from './translate'
 import { listDirEntries, readFileWithPath, writeTextFile, deleteFile, renameFile } from './ide-files'
 import { detectToolchains } from './toolchain'
-import { run } from './runner'
+import { run, compile } from './runner'
 import { tmpdir } from 'os'
 import { join, extname } from 'path'
 import { promises as fs } from 'fs'
@@ -86,6 +86,10 @@ export function registerIpc(deps: IpcDeps): void {
     })
   })
   ipcMain.handle(IPC.ideRunTemp, (_e, fileName: string) => join(tmpdir(), 'dsh-ide', fileName))
+  ipcMain.handle(IPC.ideCompile, (_e, req: { language: 'python' | 'cpp' | 'java'; targetPath: string }) => {
+    const ide = deps.store.get().ide
+    return compile({ ...req, interactive: false, tools: { python: ide.pythonPath || undefined, gpp: ide.gccPath || undefined, javac: ide.javaPath || undefined, java: ide.javaPath || undefined } })
+  })
   ipcMain.handle(IPC.aiListModels, () => listModels(deps.store.get().harness.dataDir))
   ipcMain.handle(IPC.aiAsk, async (_e, req: { promptPath: string; model?: string }) => {
     const task = buildPromptTask(req.promptPath)

@@ -151,3 +151,30 @@ export function run(req: RunRequest): RunResult {
   if (req.language === 'cpp') return runCpp(req)
   return runJava(req)
 }
+
+/** 只编译不运行：检查语法/编译/链接错误。 */
+export interface CompileResult { ok: boolean; output: string; exitCode: number | null }
+
+export function compile(req: RunRequest): CompileResult {
+  if (req.language === 'python') {
+    const python = toolPath(req.tools?.python, 'python.exe')
+    const r = runCapture(python, ['-m', 'py_compile', req.targetPath], dirname(req.targetPath))
+    return { ok: r.code === 0, output: r.out, exitCode: r.code }
+  }
+  if (req.language === 'cpp') {
+    const gpp = toolPath(req.tools?.gpp, 'g++.exe')
+    const dir = dirname(req.targetPath)
+    const exe = join(dir, basename(req.targetPath).replace(/\.[^.]+$/, '') + '.exe')
+    const charsetArgs = sourceIsGbk(req.targetPath) ? ['-finput-charset=GBK', '-fexec-charset=GBK'] : ['-fexec-charset=GBK']
+    let c = runCapture(gpp, [req.targetPath, ...charsetArgs, '-o', exe], dir, 60000)
+    if (c.code !== 0 && isLinkError(c.out)) {
+      const files = projectSources(req.targetPath)
+      if (files.length > 1) c = runCapture(gpp, [...files, ...charsetArgs, '-o', exe], dir, 60000)
+    }
+    return { ok: c.code === 0, output: c.out, exitCode: c.code }
+  }
+  const javac = toolPath(req.tools?.javac, 'javac.exe')
+  const r = runCapture(javac, [req.targetPath], dirname(req.targetPath), 60000)
+  return { ok: r.code === 0, output: r.out, exitCode: r.code }
+}
+

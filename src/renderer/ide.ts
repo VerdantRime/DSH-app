@@ -694,6 +694,30 @@ function openApplyDiff(oldText: string, newText: string, onConfirm: () => void):
   document.body.appendChild(overlay)
 }
 
+async function compileActive(): Promise<void> {
+  const tab = activeTab()
+  if (!tab) return
+  const lang = runLanguage(tab)
+  if (!lang) {
+    window.alert('当前文件语言不支持编译（支持 Python / C / C++ / Java）。请手动把语言切换为其中之一。')
+    return
+  }
+  const content = tab.model.getValue()
+  try {
+    let targetPath = tab.path
+    if (!targetPath) targetPath = await window.api.ideRunTemp(defaultRunFileName(lang))
+    await window.api.ideWriteFile(targetPath, content, tab.encoding ?? 'utf-8')
+    showOutput('编译中…')
+    const res = await window.api.ideCompile({ language: lang, targetPath })
+    if (res.ok) {
+      showOutput('编译成功，无错误')
+    } else {
+      showOutput(res.output + (res.exitCode !== null ? ('\n[退出码 ' + res.exitCode + ']') : ''))
+    }
+  } catch (e) {
+    showOutput('编译失败：' + (e instanceof Error ? e.message : String(e)))
+  }
+}
 async function runActive(): Promise<void> {
   const tab = activeTab()
   if (!tab) return
@@ -835,6 +859,9 @@ function buildDom(): void {
   const runBtn = h('button', 'btn', '运行')
   runBtn.addEventListener('click', () => void runActive())
   toolbar.appendChild(runBtn)
+  const compileBtn = h('button', 'btn', '编译')
+  compileBtn.addEventListener('click', () => void compileActive())
+  toolbar.appendChild(compileBtn)
   const dlG = h('button', 'btn', '下载') as HTMLButtonElement
   dlG.id = 'ide-gh-download'
   dlG.addEventListener('click', () => void downloadGithubActive())

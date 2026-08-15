@@ -214,6 +214,7 @@ export const IPC = {
   ideSaveCustomWallpaper: 'ide:saveCustomWallpaper',
   ideDetectTools: 'ide:detectTools',
   ideRun: 'ide:run',
+  ideCompile: 'ide:compile',
   ideRunTemp: 'ide:runTemp',
   aiAsk: 'ai:ask',
   aiListModels: 'ai:listModels',
@@ -278,6 +279,7 @@ export interface WorkdeskApi {
   ideSaveCustomWallpaper(src: string): Promise<string>
   ideDetectTools(): Promise<ToolchainReport>
   ideRun(req: IdeRunRequest): Promise<IdeRunResult>
+  ideCompile(req: { language: 'python' | 'cpp' | 'java'; targetPath: string }): Promise<{ ok: boolean; output: string; exitCode: number | null }>
   ideRunTemp(fileName: string): Promise<string>
   aiAsk(req: { promptPath: string; model?: string }): Promise<{ text: string }>
   aiListModels(): Promise<{ current: string; models: string[] }>

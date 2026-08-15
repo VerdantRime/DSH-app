@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { promises as fs } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
-import { toolPath, projectSources, javaMainClass, decodeOutput, buildBatchScript, isLinkError, run, type RunResult } from '../src/main/runner'
+import { toolPath, projectSources, javaMainClass, decodeOutput, buildBatchScript, isLinkError, run, compile, type RunResult } from '../src/main/runner'
 import { isInteractiveSource, usesConsoleApis, defaultRunFileName } from '../src/renderer/ide-utils'
 import * as iconv from 'iconv-lite'
 
@@ -105,6 +105,20 @@ describe('runner 真实编译运行（依赖本机工具链）', () => {
     const res: RunResult = run({ language: 'cpp', targetPath: f, interactive: false })
     expect(res.ok).toBe(true)
     expect(res.output).toContain('天天开心呀')
+    await fs.rm(dir, { recursive: true, force: true })
+  }, 30000)
+
+  it('compile 只编译不运行', async () => {
+    const dir = await fs.mkdtemp(join(tmpdir(), 'compile-'))
+    const f = join(dir, 'main.c')
+    await fs.writeFile(f, '#include <stdio.h>\nint main(){ return 0; }\n')
+    const ok = compile({ language: 'cpp', targetPath: f, interactive: false })
+    expect(ok.ok).toBe(true)
+    const bad = join(dir, 'bad.c')
+    await fs.writeFile(bad, 'int main( {')
+    const err = compile({ language: 'cpp', targetPath: bad, interactive: false })
+    expect(err.ok).toBe(false)
+    expect(err.output.length).toBeGreaterThan(0)
     await fs.rm(dir, { recursive: true, force: true })
   }, 30000)
 
