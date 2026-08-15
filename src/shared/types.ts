@@ -183,6 +183,12 @@ export const IPC = {
   backupRestore: 'backup:restore',
   appOpenExternal: 'app:openExternal',
   appTranslate: 'app:translate',
+  ideOpenFiles: 'ide:openFiles',
+  ideOpenFolder: 'ide:openFolder',
+  ideSaveFileDialog: 'ide:saveFileDialog',
+  ideReadFile: 'ide:readFile',
+  ideListDir: 'ide:listDir',
+  ideWriteFile: 'ide:writeFile',
   appQuitReal: 'app:quitReal',
   appShowWindow: 'app:showWindow',
   appNavigate: 'app:navigate',
@@ -227,6 +233,12 @@ export interface WorkdeskApi {
   backupRestore(srcPath: string): Promise<{ ok: boolean }>
   openExternal(url: string): Promise<void>
   translate(text: string): Promise<string>
+  ideOpenFiles(): Promise<string[]>
+  ideOpenFolder(): Promise<string | null>
+  ideSaveFileDialog(defaultName: string): Promise<string | null>
+  ideReadFile(path: string): Promise<{ path: string; content: string }>
+  ideListDir(path: string): Promise<{ name: string; path: string; type: 'file' | 'dir' }[]>
+  ideWriteFile(path: string, content: string): Promise<void>
   quitReal(): Promise<void>
   showWindow(): Promise<void>
   onNavigate(cb: (panelId: string) => void): () => void

@@ -1,6 +1,7 @@
 import { app, dialog, ipcMain, shell, type BrowserWindow } from 'electron'
 import { IPC } from '../shared/types'
 import { translateMarkdown } from './translate'
+import { listDirEntries, readTextFile, writeTextFile } from './ide-files'
 import type { ConfigStore } from './store'
 import type { HarnessManager } from './harness-manager'
 import type { GithubService } from './github-service'
@@ -27,6 +28,28 @@ export function registerIpc(deps: IpcDeps): void {
   ipcMain.handle(IPC.appGetVersion, () => app.getVersion())
   ipcMain.handle(IPC.appOpenExternal, (_e, url: string) => shell.openExternal(url))
   ipcMain.handle(IPC.appTranslate, (_e, text: string) => translateMarkdown(text))
+  // IDE 文件系统
+  ipcMain.handle(IPC.ideOpenFiles, async () => {
+    const win = deps.getWindow()
+    const opts: Electron.OpenDialogOptions = { properties: ['openFile', 'multiSelections'] }
+    const res = win ? await dialog.showOpenDialog(win, opts) : await dialog.showOpenDialog(opts)
+    return res.canceled ? [] : res.filePaths
+  })
+  ipcMain.handle(IPC.ideOpenFolder, async () => {
+    const win = deps.getWindow()
+    const opts: Electron.OpenDialogOptions = { properties: ['openDirectory'] }
+    const res = win ? await dialog.showOpenDialog(win, opts) : await dialog.showOpenDialog(opts)
+    return res.canceled ? null : res.filePaths?.[0] ?? null
+  })
+  ipcMain.handle(IPC.ideSaveFileDialog, async (_e, defaultName: string) => {
+    const win = deps.getWindow()
+    const opts: Electron.SaveDialogOptions = { defaultPath: defaultName }
+    const res = win ? await dialog.showSaveDialog(win, opts) : await dialog.showSaveDialog(opts)
+    return res.canceled ? null : res.filePath ?? null
+  })
+  ipcMain.handle(IPC.ideReadFile, (_e, p: string) => readTextFile(p))
+  ipcMain.handle(IPC.ideListDir, (_e, p: string) => listDirEntries(p))
+  ipcMain.handle(IPC.ideWriteFile, (_e, p: string, c: string) => writeTextFile(p, c))
   ipcMain.handle(IPC.appShowWindow, () => deps.getWindow()?.show())
   ipcMain.handle(IPC.appQuitReal, () => deps.quit())
   // harness
