@@ -329,6 +329,19 @@ function pickAndUpload(): void {
   input.click()
 }
 
+async function downloadFile(path: string): Promise<void> {
+  if (!currentRepo) return
+  const name = path.split('/').pop() ?? path
+  try {
+    const dest = await window.api.githubPickSavePath(name)
+    if (!dest) return
+    await window.api.githubDownloadFile(currentRepo.owner, currentRepo.repo, path, dest)
+    window.alert('已保存到：' + dest)
+  } catch (e) {
+    window.alert('下载失败：' + errMsg(e))
+  }
+}
+
 async function loadFileContent(path: string): Promise<void> {
   if (!currentRepo) return
   const content = document.getElementById('gh-content')
@@ -347,6 +360,7 @@ async function loadFileContent(path: string): Promise<void> {
         void loadFiles()
       }))
       bar.appendChild(btn('编辑', () => renderEditor(path)))
+      bar.appendChild(btn('⬇ 下载', () => void downloadFile(path)))
       bar.appendChild(btn('删除', () => {
         if (!window.confirm('确定删除文件 ' + path + ' 吗？此操作会产生一次删除提交。')) return
         const message = window.prompt('提交说明（commit message）', 'Delete ' + path)

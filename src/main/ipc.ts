@@ -1,4 +1,4 @@
-import { app, ipcMain, shell, type BrowserWindow } from 'electron'
+import { app, dialog, ipcMain, shell, type BrowserWindow } from 'electron'
 import { IPC } from '../shared/types'
 import type { ConfigStore } from './store'
 import type { HarnessManager } from './harness-manager'
@@ -51,6 +51,13 @@ export function registerIpc(deps: IpcDeps): void {
   ipcMain.handle(IPC.githubSaveFile, (_e, o, r, p, c, m, s) => deps.github.createOrUpdateFile(o, r, p, c, m, s))
   ipcMain.handle(IPC.githubDeleteFile, (_e, o, r, p, m, s) => deps.github.deleteFile(o, r, p, m, s))
   ipcMain.handle(IPC.githubUploadFile, (_e, o, r, p, c, m, s) => deps.github.uploadFile(o, r, p, c, m, s))
+  ipcMain.handle(IPC.githubDownloadFile, (_e, o, r, p, d) => deps.github.downloadFile(o, r, p, d))
+  ipcMain.handle(IPC.githubPickSavePath, async (_e, defaultName: string) => {
+    const win = deps.getWindow()
+    const opts = { defaultPath: defaultName }
+    const res = win ? await dialog.showSaveDialog(win, opts) : await dialog.showSaveDialog(opts)
+    return res.canceled ? null : res.filePath ?? null
+  })
   // 备份/恢复
   ipcMain.handle(IPC.backupCreate, (_e, destPath?: string) => deps.backup.create(destPath))
   ipcMain.handle(IPC.backupRestore, (_e, srcPath: string) => deps.backup.restore(srcPath))

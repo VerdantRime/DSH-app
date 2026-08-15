@@ -27,6 +27,7 @@ function fakeClient(overrides: Partial<IGithubClient> = {}): IGithubClient {
     createOrUpdateFile: async () => {},
     deleteFile: async () => {},
     uploadFile: async () => {},
+    getRawFile: async () => Buffer.from('x'),
     ...overrides
   }
 }
@@ -76,6 +77,18 @@ describe('GithubService', () => {
     await svc.uploadFile('o', 'r', 'a.bin', 'QUJD', '上传')
     await svc.uploadFile('o', 'r', 'a.bin', 'QUJD', '覆盖', 'sha2')
     expect(calls).toEqual([['o', 'r', 'a.bin', 'QUJD', '上传', undefined], ['o', 'r', 'a.bin', 'QUJD', '覆盖', 'sha2']])
+  })
+
+  it('downloadFile 将原始字节写入目标路径', async () => {
+    const creds = new CredentialsStore(join(dir, 'github.json'), cipher)
+    const svc = new GithubService(creds, () => fakeClient({
+      getRawFile: async () => Buffer.from([1, 2, 3, 250])
+    }))
+    await svc.setToken('tok')
+    const dest = join(dir, 'out.bin')
+    await svc.downloadFile('o', 'r', 'a.bin', dest)
+    const buf = await fs.readFile(dest)
+    expect([...buf]).toEqual([1, 2, 3, 250])
   })
 
   it('clearToken 清空并复位状态', async () => {

@@ -131,6 +131,19 @@ describe('GithubClient 端点', () => {
     expect(captured.sha).toBeUndefined()
   })
 
+  it('getRawFile 解码 base64 为字节', async () => {
+    const fake = { rest: { repos: { getContent: async () => ({ data: { path: 'a.bin', encoding: 'base64', content: Buffer.from([0, 1, 2, 255]).toString('base64') } }) } } }
+    const c = new GithubClient('tok', { octokit: fake as any })
+    const buf = await c.getRawFile('o', 'r', 'a.bin')
+    expect([...buf]).toEqual([0, 1, 2, 255])
+  })
+
+  it('getRawFile 超过 1MB（无 content）给出中文错误', async () => {
+    const fake = { rest: { repos: { getContent: async () => ({ data: { path: 'big.bin', size: 2000000 } }) } } }
+    const c = new GithubClient('tok', { octokit: fake as any })
+    await expect(c.getRawFile('o', 'r', 'big.bin')).rejects.toThrow('1MB')
+  })
+
   it('deleteFile 携带 sha 与 message 调用 API', async () => {
     let captured: any = null
     const fake = { rest: { repos: { deleteFile: async (args: any) => { captured = args } } } }

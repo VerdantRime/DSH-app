@@ -138,6 +138,7 @@ export interface IGithubClient {
   createOrUpdateFile(owner: string, repo: string, path: string, content: string, message: string, sha?: string): Promise<void>
   deleteFile(owner: string, repo: string, path: string, message: string, sha: string): Promise<void>
   uploadFile(owner: string, repo: string, path: string, contentBase64: string, message: string, sha?: string): Promise<void>
+  getRawFile(owner: string, repo: string, path: string): Promise<Buffer>
 }
 
 export const DEFAULT_GITHUB_API = 'https://api.github.com'
@@ -267,6 +268,16 @@ export class GithubClient implements IGithubClient {
     }
     if (sha) payload.sha = sha
     await this.octokit.rest.repos.createOrUpdateFileContents(payload as any)
+  }
+
+  /** 读取文件原始字节（支持二进制下载）；超过 1MB 的仓库文件 API 不返回内容，会给出中文提示。 */
+  async getRawFile(owner: string, repo: string, path: string): Promise<Buffer> {
+    const res = await this.octokit.rest.repos.getContent({ owner, repo, path })
+    const data = res.data as any
+    if (!data || data.encoding !== 'base64' || typeof data.content !== 'string') {
+      throw new Error('无法读取该文件：可能是空文件或超过 1MB 的大小限制')
+    }
+    return Buffer.from(data.content, 'base64')
   }
 
   async deleteFile(owner: string, repo: string, path: string, message: string, sha: string): Promise<void> {

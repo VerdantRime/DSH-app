@@ -1,3 +1,4 @@
+import { promises as fs } from 'fs'
 import type { CredentialsStore } from './credentials'
 import { GithubClient, type IGithubClient } from './github'
 import type {
@@ -124,5 +125,10 @@ export class GithubService {
     sha?: string
   ): Promise<void> {
     await (await this.getClient()).uploadFile(owner, repo, path, contentBase64, message, sha)
+  }
+
+  async downloadFile(owner: string, repo: string, path: string, destPath: string): Promise<void> {
+    const buf = await (await this.getClient()).getRawFile(owner, repo, path)
+    await fs.writeFile(destPath, buf)
   }
 }
