@@ -5,5 +5,7 @@ release
 *.log
 .DS_Store
 .dsh-vision-toolkit/
+design-preview.html
+design-preview.png
 build/tray32.b64
 build/tray32.png

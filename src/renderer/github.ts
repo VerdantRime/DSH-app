@@ -8,6 +8,7 @@ import type {
   CommitSummary,
   CommitDetail
 } from '../shared/types'
+import { FOLDER_ICON, FILE_ICON, GITHUB_ICON } from './icons'
 import DOMPurify from 'dompurify'
 import { renderMarkdown } from './markdown'
 import { parentPath, fileNameOf, joinRepoPath, validateNewFileName, breadcrumbSegments, formatFileSize, isMarkdownFile } from './github-utils'
@@ -78,7 +79,10 @@ function renderEmpty(): void {
   if (!panel) return
   clear(panel)
   const box = h('div', 'gh-empty')
-  box.appendChild(h('div', 'gh-empty-icon', '🐙'))
+  const octo = document.createElement('div')
+  octo.className = 'gh-empty-icon'
+  octo.innerHTML = GITHUB_ICON
+  box.appendChild(octo)
   box.appendChild(h('div', '', '连接 GitHub（只读）'))
   box.appendChild(h('div', 'gh-empty-sub', '需要一个只读 Personal Access Token，按下面步骤获取：'))
 
@@ -276,8 +280,10 @@ async function loadFiles(): Promise<void> {
     }
     content.appendChild(bc)
     const tools = h('div', 'gh-bar')
-    tools.appendChild(btn('⬆ 上传文件', () => pickAndUpload()))
-    tools.appendChild(btn('＋ 新建文件', () => createFile()))
+    const upBtn = btn('上传文件', () => pickAndUpload())
+    upBtn.classList.add('primary')
+    tools.appendChild(upBtn)
+    tools.appendChild(btn('新建文件', () => createFile()))
     content.appendChild(tools)
     if (tree.length === 0) {
       content.appendChild(h('div', 'gh-empty', '空目录'))
@@ -285,7 +291,11 @@ async function loadFiles(): Promise<void> {
     }
     for (const n of tree) {
       const row = h('div', 'gh-file-row')
-      row.appendChild(h('span', 'gh-file-label', (n.type === 'dir' ? '📁 ' : '📄 ') + n.name))
+      const ficon = document.createElement('span')
+      ficon.className = 'gh-file-icon'
+      ficon.innerHTML = n.type === 'dir' ? FOLDER_ICON : FILE_ICON
+      row.appendChild(ficon)
+      row.appendChild(h('span', 'gh-file-label', n.name))
       if (n.type === 'file' && n.size > 0) {
         row.appendChild(h('span', 'gh-file-size', formatFileSize(n.size)))
       }
@@ -389,7 +399,7 @@ async function loadFileContent(path: string): Promise<void> {
         void loadFiles()
       }))
       bar.appendChild(btn('编辑', () => renderEditor(path, currentFileContent, currentFileSha)))
-      bar.appendChild(btn('⬇ 下载', () => void downloadFile(path)))
+      bar.appendChild(btn('下载', () => void downloadFile(path)))
       bar.appendChild(btn('删除', () => {
         if (!window.confirm('确定删除文件 ' + path + ' 吗？此操作会产生一次删除提交。')) return
         const message = window.prompt('提交说明（commit message）', 'Delete ' + path)
@@ -452,13 +462,14 @@ function renderEditor(path: string, initialContent?: string, sha?: string, after
   content.appendChild(msg)
   const done = afterSave ?? (() => void loadFileContent(path))
   const row = h('div', 'set-row')
-  row.appendChild(btn('提交', () => {
+  const submitBtn = btn('提交', () => {
     const message = msg.value.trim() || 'Update ' + path
     void window.api
       .githubSaveFile(currentRepo!.owner, currentRepo!.repo, path, ta.value, message, sha)
       .then(done)
       .catch((e) => window.alert('提交失败：' + errMsg(e)))
-  }))
+  })
+  submitBtn.classList.add('primary')
   row.appendChild(btn('取消', done))
   content.appendChild(row)
 }
@@ -645,7 +656,7 @@ async function loadReadme(): Promise<void> {
 function renderMarkdownView(name: string, markdown: string): HTMLElement {
   const box = h('div', 'gh-readme-wrap')
   const bar = h('div', 'gh-tabs')
-  bar.appendChild(h('span', 'gh-crumb', '📖 ' + name))
+  bar.appendChild(h('span', 'gh-crumb', name))
   const previewBtn = btn('网页预览', () => set('preview'))
   const rawBtn = btn('源码', () => set('raw'))
   bar.appendChild(previewBtn)

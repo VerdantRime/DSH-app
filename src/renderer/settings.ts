@@ -151,6 +151,7 @@ function renderGithub(): HTMLElement {
         statusEl.textContent = '验证失败：' + (e instanceof Error ? e.message : String(e))
       })
   })
+  save.classList.add('primary')
   const clearBtn = btn('清除', () => {
     void window.api.githubClearToken().then(() => void refreshGithubStatus())
   })

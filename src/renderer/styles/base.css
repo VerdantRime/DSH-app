@@ -1,16 +1,29 @@
+/* ============================================================
+   DeepSeek工作台 基础样式（依据 DESIGN.md 设计规范实现）
+   圆润、亲和、蓝白渐变品牌感；动效只用 transform/opacity。
+   ============================================================ */
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; height: 100%; }
 body {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  font-family: 'Segoe UI', system-ui, -apple-system, 'Microsoft YaHei', sans-serif;
+  font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', system-ui, -apple-system, sans-serif;
   color: var(--fg);
   background: var(--bg);
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
 }
+
+/* 细滚动条 */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: var(--radius-pill); border: 2px solid transparent; background-clip: content-box; }
+::-webkit-scrollbar-thumb:hover { background: var(--fg-muted); background-clip: content-box; }
+
 .app { flex: 1; display: flex; min-height: 0; }
+
+/* ============ 侧边栏 ============ */
 .sidebar {
   width: 160px;
   flex: none;
@@ -20,27 +33,42 @@ body {
   border-right: 1px solid var(--border);
 }
 .sidebar.collapsed { width: 48px; }
+
+/* 品牌区：图标 + 名称 + 萌系副标语 */
+.sidebar-brand { display: flex; align-items: center; gap: 10px; padding: 14px 12px 8px; }
+.sidebar-brand .brand-logo { width: 32px; height: 32px; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); flex: none; }
+.brand-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
+.brand-title { font-size: 13px; font-weight: 700; color: var(--brand-navy); white-space: nowrap; letter-spacing: .2px; }
+.brand-sub { font-size: 10px; color: var(--fg-muted); white-space: nowrap; }
+.sidebar.collapsed .brand-text { display: none; }
+
 .collapse-btn {
   border: none; background: transparent; color: var(--fg);
-  font-size: 16px; padding: 12px; cursor: pointer; text-align: left;
-  border-radius: 8px; margin: 6px 8px 0;
+  font-size: 16px; padding: 10px 12px; cursor: pointer; text-align: left;
+  border-radius: var(--radius-md); margin: 2px 8px 0;
 }
 .collapse-btn:hover { background: var(--hover); }
-.nav { display: flex; flex-direction: column; gap: 4px; padding: 8px; }
+.collapse-btn svg { width: 18px; height: 18px; display: block; }
+
+.nav { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-2); }
 .nav-item {
   display: flex; align-items: center; gap: 10px;
   border: none; background: transparent; color: var(--fg);
-  padding: 10px 12px; border-radius: 8px; cursor: pointer;
-  font-size: 14px; font-weight: 500; text-align: left; width: 100%;
+  padding: 10px 12px; border-radius: var(--radius-md); cursor: pointer;
+  font-size: 13px; font-weight: 600; text-align: left; width: 100%;
 }
 .nav-item:hover { background: var(--hover); }
-.nav-item.active { background: var(--accent); color: #ffffff; box-shadow: var(--shadow-sm); }
+.nav-item.active {
+  background: linear-gradient(135deg, var(--brand-blue), var(--brand-indigo));
+  color: #ffffff;
+  box-shadow: var(--shadow-sm);
+}
 .nav-icon { width: 18px; height: 18px; flex: none; display: inline-flex; align-items: center; justify-content: center; }
 .nav-icon svg { width: 18px; height: 18px; display: block; }
-.collapse-btn svg { width: 18px; height: 18px; display: block; }
 .sidebar.collapsed .nav-label { display: none; }
+
 .sidebar-footer {
-  margin-top: auto; padding: 12px; display: flex; align-items: center; gap: 8px;
+  margin-top: auto; padding: var(--space-3); display: flex; align-items: center; gap: 8px;
   border-top: 1px solid var(--border);
 }
 .dot { width: 10px; height: 10px; border-radius: 50%; background: #999; display: inline-block; flex: none; box-shadow: 0 0 0 2px var(--card-bg); }
@@ -51,6 +79,8 @@ body {
 .dot-error { background: #cf222e; }
 .version { font-size: 12px; color: var(--fg-muted); }
 .sidebar.collapsed .version { display: none; }
+
+/* ============ 内容区与面板 ============ */
 .content { flex: 1; position: relative; overflow: hidden; }
 .panel { position: absolute; inset: 0; }
 .panel.hidden { display: none !important; }
@@ -62,16 +92,9 @@ body {
 #panel-chat { display: flex; flex-direction: column; }
 .harness-console { flex: none; border-bottom: 1px solid var(--border); background: var(--card-bg); }
 .console-row { display: flex; align-items: center; gap: 10px; padding: 10px 14px; flex-wrap: wrap; }
-.hc-status { font-weight: 600; font-size: 13px; color: var(--accent-strong); }
+.hc-status { font-weight: 700; font-size: 13px; color: var(--accent-strong); }
 .hc-meta { font-size: 12px; color: var(--fg-muted); }
 .spacer { flex: 1; }
-.btn {
-  border: 1px solid var(--border); background: var(--card-bg); color: var(--fg);
-  padding: 5px 12px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 500;
-  box-shadow: var(--shadow-sm);
-}
-.btn:hover { background: var(--hover); border-color: var(--accent); }
-.btn:disabled { opacity: 0.45; cursor: not-allowed; }
 .log-drawer { border-top: 1px solid var(--border); max-height: 200px; overflow: auto; }
 .log-drawer.hidden { display: none; }
 .log-view {
@@ -80,45 +103,90 @@ body {
 }
 .webview-host { flex: 1; min-height: 0; }
 .webview-host webview { width: 100%; height: 100%; display: flex; }
-#panel-github { overflow: auto; padding: 16px; }
+
+/* ============ 按钮体系（rounded.md / 紧凑高度） ============ */
+.btn {
+  border: 1px solid var(--border); background: var(--card-bg); color: var(--fg);
+  padding: 6px 14px; border-radius: var(--radius-md); cursor: pointer;
+  font-size: 12px; font-weight: 600;
+  box-shadow: var(--shadow-sm);
+}
+.btn:hover:not(:disabled) { background: var(--hover); border-color: var(--accent); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn.primary {
+  background: linear-gradient(135deg, var(--brand-blue), var(--brand-indigo));
+  border-color: transparent; color: #ffffff;
+}
+.btn.primary:hover:not(:disabled) { background: linear-gradient(135deg, var(--brand-indigo), var(--brand-navy)); }
+
+/* ============ GitHub 面板 ============ */
+#panel-github { overflow: auto; padding: var(--space-4); }
 .gh-loading, .gh-error, .gh-empty { padding: 24px; color: var(--fg-muted); text-align: center; }
 .gh-empty-icon { font-size: 40px; margin-bottom: 8px; }
+.gh-empty-icon svg { width: 44px; height: 44px; color: var(--brand-blue); }
 .gh-empty-sub { font-size: 13px; margin: 8px 0 16px; color: var(--fg-muted); }
 .gh-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
-.gh-search { flex: 1; min-width: 160px; padding: 7px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--card-bg); color: var(--fg); box-shadow: var(--shadow-sm); }
+.gh-search {
+  flex: 1; min-width: 160px; padding: 8px 12px; border: 1px solid var(--border);
+  border-radius: var(--radius-md); background: var(--card-bg); color: var(--fg);
+  box-shadow: var(--shadow-sm); font-size: 13px;
+}
 .gh-search:focus { border-color: var(--accent); outline: none; }
 .gh-user { font-size: 13px; color: var(--fg-muted); }
 .gh-list { display: flex; flex-direction: column; gap: 10px; }
-.gh-card { border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; cursor: pointer; background: var(--card-bg); box-shadow: var(--shadow-sm); }
+.gh-card {
+  border: 1px solid var(--border); border-radius: var(--radius-lg);
+  padding: 14px 16px; cursor: pointer; background: var(--card-bg);
+  box-shadow: var(--shadow-sm);
+}
 .gh-card:hover { background: var(--hover); border-color: var(--accent); }
-.gh-card-title { font-weight: 600; color: var(--accent-strong); }
+.gh-card-title { font-weight: 700; color: var(--accent-strong); font-size: 14px; }
 .gh-card-desc { font-size: 13px; color: var(--fg-muted); margin: 4px 0; }
 .gh-card-meta { font-size: 12px; color: var(--fg-muted); }
-.gh-breadcrumb { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
-.gh-crumb { font-weight: 600; color: var(--accent-strong); }
-.gh-meta { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--fg-muted); margin-bottom: 10px; }
-.gh-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
-.gh-tabs .btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-.gh-content { border-top: 1px solid var(--border); padding-top: 10px; }
-.gh-row { padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; cursor: pointer; display: flex; justify-content: space-between; gap: 8px; background: var(--card-bg); }
-.gh-row:hover { background: var(--hover); }
-.gh-row-meta { font-size: 12px; color: var(--fg-muted); }
-.gh-file-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 10px; cursor: pointer; border-radius: 8px; }
-.gh-file-row:hover { background: var(--hover); }
-.gh-file-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.gh-file-size { flex: none; color: var(--fg-muted); font-size: 12px; margin-left: 10px; }
+.gh-breadcrumb { display: flex; align-items: center; gap: 4px; margin-bottom: 10px; flex-wrap: wrap; }
+.gh-crumb { font-weight: 700; color: var(--accent-strong); }
 .gh-crumb-sep { color: var(--fg-muted); }
-.gh-breadcrumb .btn { border: none; background: transparent; box-shadow: none; padding: 2px 8px; color: var(--accent-strong); }
+.gh-breadcrumb .btn { border: none; background: transparent; box-shadow: none; padding: 3px 8px; color: var(--accent-strong); }
 .gh-breadcrumb .btn:hover { background: var(--hover); }
 .gh-breadcrumb .btn.active { background: var(--accent); color: #fff; }
-.gh-code, .gh-body { margin: 8px 0; padding: 12px 14px; background: var(--sidebar-bg); border: 1px solid var(--border); border-radius: 8px; font-family: Consolas, monospace; font-size: 12px; white-space: pre-wrap; word-break: break-all; }
+.gh-meta { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--fg-muted); margin-bottom: 10px; flex-wrap: wrap; }
+.gh-tabs { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; align-items: center; }
+.gh-tabs .btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.gh-content { border-top: 1px solid var(--border); padding-top: 10px; }
+.gh-row {
+  padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-md);
+  margin-bottom: 8px; cursor: pointer; display: flex; justify-content: space-between;
+  gap: 8px; background: var(--card-bg);
+}
+.gh-row:hover { background: var(--hover); }
+.gh-row-meta { font-size: 12px; color: var(--fg-muted); }
+.gh-file-row {
+  display: flex; align-items: center; gap: 10px; padding: 7px 10px;
+  cursor: pointer; border-radius: var(--radius-md);
+}
+.gh-file-row:hover { background: var(--hover); }
+.gh-file-icon { width: 16px; height: 16px; flex: none; display: inline-flex; color: var(--brand-sky); }
+.gh-file-icon svg { width: 16px; height: 16px; display: block; }
+.gh-file-row:hover .gh-file-icon { color: var(--brand-blue); }
+.gh-file-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gh-file-size { flex: none; color: var(--fg-muted); font-size: 12px; }
+.gh-code, .gh-body {
+  margin: 8px 0; padding: 12px 14px; background: var(--sidebar-bg);
+  border: 1px solid var(--border); border-radius: var(--radius-md);
+  font-family: Consolas, monospace; font-size: 12px; white-space: pre-wrap; word-break: break-all;
+}
 .gh-body { font-family: inherit; }
-.gh-editor { width: 100%; min-height: 240px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--card-bg); color: var(--fg); font-family: Consolas, monospace; font-size: 13px; resize: vertical; margin-bottom: 8px; }
-.gh-comment { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; background: var(--card-bg); }
+.gh-editor {
+  width: 100%; min-height: 240px; padding: 10px 12px; border: 1px solid var(--border);
+  border-radius: var(--radius-md); background: var(--card-bg); color: var(--fg);
+  font-family: Consolas, monospace; font-size: 13px; resize: vertical; margin-bottom: 8px;
+}
+.gh-comment { border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 10px 12px; margin-bottom: 10px; background: var(--card-bg); }
 .gh-comment-head { font-size: 12px; color: var(--fg-muted); margin-bottom: 4px; }
 .gh-error { color: #cf222e; }
+
 /* ---- README / Markdown 网页渲染（GitHub 风格） ---- */
-.gh-readme { line-height: 1.65; font-size: 14px; }
+.gh-readme { line-height: 1.65; font-size: 14px; border-top: 1px solid var(--border); padding-top: 12px; margin-top: 10px; }
 .gh-readme h1, .gh-readme h2 { border-bottom: 1px solid var(--border); padding-bottom: .3em; margin: 1.2em 0 .6em; }
 .gh-readme h1 { font-size: 1.8em; }
 .gh-readme h2 { font-size: 1.4em; }
@@ -126,8 +194,8 @@ body {
 .gh-readme p { margin: .6em 0; }
 .gh-readme a { color: var(--accent-strong); text-decoration: none; }
 .gh-readme a:hover { text-decoration: underline; }
-.gh-readme code { background: var(--hover); border-radius: 4px; padding: 2px 5px; font-family: Consolas, monospace; font-size: 12px; }
-.gh-readme pre { background: var(--sidebar-bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; overflow: auto; }
+.gh-readme code { background: var(--hover); border-radius: var(--radius-xs); padding: 2px 5px; font-family: Consolas, monospace; font-size: 12px; }
+.gh-readme pre { background: var(--sidebar-bg); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 12px 14px; overflow: auto; }
 .gh-readme pre code { background: none; padding: 0; }
 .gh-readme blockquote { margin: .6em 0; padding: 2px 14px; color: var(--fg-muted); border-left: 4px solid var(--border); }
 .gh-readme table { border-collapse: collapse; margin: 12px 0; }
@@ -136,21 +204,29 @@ body {
 .gh-readme img { max-width: 100%; }
 .gh-readme ul, .gh-readme ol { padding-left: 1.6em; }
 .gh-readme hr { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
-#panel-settings { overflow: auto; padding: 16px; }
-.set-section { border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; background: var(--card-bg); box-shadow: var(--shadow-sm); }
-.set-title { margin: 0 0 12px; font-size: 14px; font-weight: 600; color: var(--accent-strong); }
+
+/* ============ 设置面板 ============ */
+#panel-settings { overflow: auto; padding: var(--space-4); }
+.set-section {
+  border: 1px solid var(--border); border-radius: var(--radius-lg);
+  padding: 16px 18px; margin-bottom: 14px; background: var(--card-bg);
+  box-shadow: var(--shadow-sm);
+}
+.set-title { margin: 0 0 12px; font-size: 14px; font-weight: 700; color: var(--accent-strong); }
 .set-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
 .set-label { font-size: 13px; min-width: 90px; font-weight: 500; }
 .set-note { font-size: 13px; color: var(--fg-muted); margin-bottom: 6px; }
 .set-row .btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-.gh-token-help { border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; background: var(--accent-soft); }
-/* ---- 动效（流畅优先，GPU 友好：transform/opacity，避开 width/height/top/left） ---- */
-.btn, .nav-item, .gh-card, .gh-row, .gh-file-row, .gh-comment, .collapse-btn, .set-section {
+.gh-token-help { border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 12px 14px; margin-bottom: 12px; background: var(--accent-soft); }
+
+/* ============ 动效（流畅优先：transform/opacity，避开布局属性） ============ */
+.btn, .nav-item, .gh-card, .gh-row, .gh-file-row, .gh-comment, .collapse-btn, .set-section, .brand-logo {
   transition: background-color .15s ease, border-color .15s ease, color .15s ease, box-shadow .15s ease, transform .12s ease;
 }
 .btn:hover:not(:disabled), .gh-card:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
 .btn:active:not(:disabled) { transform: translateY(0); }
 .nav-item:active { transform: scale(0.98); }
+.brand-logo:hover { transform: rotate(6deg) scale(1.06); }
 #panel-github, #panel-settings { animation: panel-in .18s ease; }
 .dot-starting { animation: pulse 1.2s ease-in-out infinite; }
 @keyframes panel-in {
