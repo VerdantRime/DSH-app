@@ -1,5 +1,6 @@
 import monaco from './monaco-setup'
-import { languageForFile, tabTitleFromPath, isInteractiveSource, usesConsoleApis, defaultRunFileName, extractCodeBlock, githubTabKey, buildChatPrompt, type ChatTurn, type IdeLanguage } from './ide-utils'
+import { languageForFile, tabTitleFromPath, isInteractiveSource, usesConsoleApis, defaultRunFileName, extractCodeBlock, githubTabKey, buildChatPrompt, canApplyAi, type ChatTurn, type IdeLanguage } from './ide-utils'
+import { diffLines } from 'diff'
 import { githubErrorHint } from './github-utils'
 import DOMPurify from 'dompurify'
 import { renderMarkdown } from './markdown'
@@ -37,6 +38,7 @@ let treeDir = ''
 let lastAiCode: string | null = null
 let lastAiRange: monaco.Range | null = null
 let aiHistory: ChatTurn[] = []
+let lastAiAction: 'explain' | 'debug' | 'optimize' | 'chat' = 'chat'
 let aiModel = ''
 
 function h(tag: string, className?: string, text?: string): HTMLElement {
@@ -408,11 +410,12 @@ function currentCodeContext(): string {
   return tab.model.getValue()
 }
 
-async function sendAiChat(question: string): Promise<void> {
+async function sendAiChat(question: string, action: 'explain' | 'debug' | 'optimize' | 'chat' = 'chat'): Promise<void> {
   const q = question.trim()
   if (!q) return
   aiHistory.push({ role: 'user', content: q })
   renderAiHistory()
+  lastAiAction = action
   const tab = activeTab()
   const lang = tab ? (runLanguage(tab) ?? 'plaintext') : 'plaintext'
   const prompt = buildChatPrompt(aiHistory, q, currentCodeContext(), lang)
@@ -427,8 +430,8 @@ async function sendAiChat(question: string): Promise<void> {
     aiHistory.push({ role: 'assistant', content: res.text })
     renderAiHistory()
     const code = extractCodeBlock(res.text)
-    if (code) { lastAiCode = code; aiApplyEl().classList.remove('hidden') }
-    else aiApplyEl().classList.add('hidden')
+    if (canApplyAi(lastAiAction, !!code)) { lastAiCode = code; aiApplyEl().classList.remove('hidden') }
+    else { lastAiCode = null; aiApplyEl().classList.add('hidden') }
   } catch (e) {
     waiting.remove()
     aiHistory.push({ role: 'assistant', content: 'AI 失败：' + (e instanceof Error ? e.message : String(e)) })
@@ -443,20 +446,72 @@ function quickAsk(action: 'explain' | 'debug' | 'optimize'): void {
       : action === 'debug'
         ? '请找出这段代码中的 bug 或潜在问题，并说明原因与修复建议'
         : '请优化这段代码，使其更简洁、高效、可读；先简要列出优化点，再在一个 fenced code block 里给出完整优化后的代码'
-  void sendAiChat(q)
+  void sendAiChat(q, action)
 }
 
 function applyAiCode(): void {
   const tab = activeTab()
   if (!tab || lastAiCode == null || !editor) return
-  if (lastAiRange) {
-    editor.executeEdits('ai', [{ range: lastAiRange, text: lastAiCode }])
-  } else {
-    tab.model.setValue(lastAiCode)
+  const oldText = lastAiRange ? tab.model.getValueInRange(lastAiRange) : tab.model.getValue()
+  openApplyDiff(oldText, lastAiCode, () => {
+    const range = lastAiRange ?? tab.model.getFullModelRange()
+    editor!.executeEdits('ai-apply', [{ range, text: lastAiCode! }])
+    lastAiCode = null
+    lastAiRange = null
+    aiApplyEl().classList.add('hidden')
+    flashStatus('已应用，可按 Ctrl+Z 或「撤销」撤回')
+  })
+}
+
+function undoAiEdit(): void {
+  editor?.trigger('ai', 'undo', null)
+  flashStatus('已撤销')
+}
+
+function closeApplyDiff(): void {
+  document.getElementById('ide-diff-overlay')?.remove()
+}
+
+function buildDiffLines(oldText: string, newText: string): HTMLElement {
+  const pre = document.createElement('pre')
+  pre.className = 'ide-diff-pre'
+  const parts = diffLines(oldText, newText)
+  for (const p of parts) {
+    const lns = p.value.replace(/\n$/, '').split('\n')
+    for (const ln of lns) {
+      const el = document.createElement('div')
+      el.className = p.added ? 'ide-diff-add' : p.removed ? 'ide-diff-del' : 'ide-diff-same'
+      el.textContent = (p.added ? '+ ' : p.removed ? '- ' : '  ') + ln
+      pre.appendChild(el)
+    }
   }
-  lastAiCode = null
-  lastAiRange = null
-  aiApplyEl().classList.add('hidden')
+  return pre
+}
+
+function openApplyDiff(oldText: string, newText: string, onConfirm: () => void): void {
+  closeApplyDiff()
+  const overlay = h('div', 'ide-diff-overlay')
+  overlay.id = 'ide-diff-overlay'
+  const modal = h('div', 'ide-diff-modal')
+  const head = h('div', 'ide-diff-head')
+  head.appendChild(h('span', '', '确认应用修改'))
+  const close = h('button', 'ide-diff-close', '×')
+  close.addEventListener('click', closeApplyDiff)
+  head.appendChild(close)
+  modal.appendChild(head)
+  const body = h('div', 'ide-diff-body')
+  body.appendChild(buildDiffLines(oldText, newText))
+  modal.appendChild(body)
+  const actions = h('div', 'ide-diff-actions')
+  const ok = h('button', 'btn primary', '确认替换')
+  ok.addEventListener('click', () => { closeApplyDiff(); onConfirm() })
+  const cancel = h('button', 'btn', '取消')
+  cancel.addEventListener('click', closeApplyDiff)
+  actions.appendChild(ok)
+  actions.appendChild(cancel)
+  modal.appendChild(actions)
+  overlay.appendChild(modal)
+  document.body.appendChild(overlay)
 }
 
 async function runActive(): Promise<void> {
@@ -651,6 +706,9 @@ function buildDom(): void {
   const applyBtn2 = h('button', 'btn primary', '应用到编辑器')
   applyBtn2.addEventListener('click', () => applyAiCode())
   aiApply.appendChild(applyBtn2)
+  const undoBtn2 = h('button', 'btn', '撤销')
+  undoBtn2.addEventListener('click', () => undoAiEdit())
+  aiApply.appendChild(undoBtn2)
   aiPanel.appendChild(aiApply)
   const inputRow = h('div', 'ide-ai-input-row')
   const chatInput = document.createElement('input')

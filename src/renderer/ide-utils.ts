@@ -52,6 +52,11 @@ export function githubTabKey(owner: string, repo: string, path: string): string 
 
 export interface ChatTurn { role: 'user' | 'assistant'; content: string }
 
+/** 哪些 AI 动作允许「应用到编辑器」：找错/优化且含代码块；解释或自由对话不应用。 */
+export function canApplyAi(action: 'explain' | 'debug' | 'optimize' | 'chat', hasCode: boolean): boolean {
+  return hasCode && (action === 'debug' || action === 'optimize')
+}
+
 /** 组装发送给 headless 智能体的完整提示（代码上下文 + 历史 + 最新问题）。 */
 export function buildChatPrompt(history: ChatTurn[], question: string, code: string, language: string): string {
   const lines: string[] = ['你是一名代码助手。']

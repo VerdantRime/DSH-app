@@ -124,6 +124,16 @@ body {
 .ide-ai-msg.ide-ai-user { align-self: flex-end; background: var(--accent-soft); color: var(--fg); }
 .ide-ai-msg.ide-ai-assistant { align-self: flex-start; background: var(--card-bg); border: 1px solid var(--border); }
 .ide-ai-input-row { display: flex; gap: 6px; padding: 8px 10px; border-top: 1px solid var(--border); }
+.ide-diff-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 10000; display: flex; align-items: center; justify-content: center; }
+.ide-diff-modal { width: 720px; max-width: 92vw; max-height: 84vh; background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); display: flex; flex-direction: column; overflow: hidden; }
+.ide-diff-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-bottom: 1px solid var(--border); font-weight: 700; color: var(--accent-strong); }
+.ide-diff-close { border: none; background: transparent; color: var(--fg-muted); font-size: 18px; cursor: pointer; }
+.ide-diff-body { flex: 1; overflow: auto; }
+.ide-diff-pre { margin: 0; padding: 8px 12px; font-family: Consolas, monospace; font-size: 12px; line-height: 1.5; }
+.ide-diff-add { background: rgba(46, 160, 67, 0.15); color: #1a7f37; }
+.ide-diff-del { background: rgba(207, 34, 46, 0.15); color: #b62324; }
+.ide-diff-same { color: var(--fg-muted); }
+.ide-diff-actions { display: flex; gap: 8px; justify-content: flex-end; padding: 10px 14px; border-top: 1px solid var(--border); }
 .ide-tab-close { margin-left: 8px; color: var(--fg-muted); opacity: 0; }
 .ide-tab:hover .ide-tab-close { opacity: 1; }
 .ide-tab-close:hover { color: #cf222e; }
