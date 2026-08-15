@@ -18,8 +18,23 @@ export async function listDirEntries(dir: string): Promise<DirEntry[]> {
   return sortDirEntries(entries)
 }
 
+/** 解码文本文件：先按 UTF-8 严格解码，失败回退 GBK（兼容 Dev-C++ 等 GBK 源文件）。 */
+export function decodeText(buf: Buffer): string {
+  if (!buf || buf.length === 0) return ''
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(buf)
+  } catch {
+    /* 非 UTF-8，回退 GBK */
+  }
+  try {
+    return new TextDecoder('gbk').decode(buf)
+  } catch {
+    return buf.toString('utf-8')
+  }
+}
+
 export async function readTextFile(path: string): Promise<string> {
-  return fs.readFile(path, 'utf-8')
+  return decodeText(await fs.readFile(path))
 }
 
 /** 读取并带路径返回（前端契约）。 */

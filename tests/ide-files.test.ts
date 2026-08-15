@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { promises as fs } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
-import { sortDirEntries, listDirEntries, readTextFile, readFileWithPath, writeTextFile, type DirEntry } from '../src/main/ide-files'
+import { sortDirEntries, listDirEntries, readTextFile, readFileWithPath, writeTextFile, decodeText, type DirEntry } from '../src/main/ide-files'
 
 describe('IDE 文件服务', () => {
   it('sortDirEntries 文件夹置顶且不修改原数组', () => {
@@ -22,6 +22,14 @@ describe('IDE 文件服务', () => {
     await writeTextFile(nested, 'code')
     expect(await readTextFile(nested)).toBe('code')
     await fs.rm(base, { recursive: true, force: true })
+  })
+
+  it('decodeText 自动识别 UTF-8 与 GBK（编辑器不乱码）', () => {
+    expect(decodeText(Buffer.from('hello', 'utf-8'))).toBe('hello')
+    expect(decodeText(Buffer.from('中文', 'utf-8'))).toBe('中文')
+    // '你' 的 GBK 编码 0xC4 0xE3，非合法 UTF-8
+    expect(decodeText(Buffer.from([0xc4, 0xe3]))).toBe('你')
+    expect(decodeText(Buffer.alloc(0))).toBe('')
   })
 
   it('readFileWithPath 返回 {path, content}', async () => {
