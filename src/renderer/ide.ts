@@ -1,5 +1,6 @@
 import monaco from './monaco-setup'
-import { languageForFile, tabTitleFromPath, isInteractiveSource, defaultRunFileName, extractCodeBlock, type IdeLanguage } from './ide-utils'
+import { languageForFile, tabTitleFromPath, isInteractiveSource, defaultRunFileName, extractCodeBlock, githubTabKey, type IdeLanguage } from './ide-utils'
+import { githubErrorHint } from './github-utils'
 import DOMPurify from 'dompurify'
 import { renderMarkdown } from './markdown'
 import type { IdeRunResult } from '../shared/types'
@@ -24,7 +25,7 @@ const LANG_LABELS: { id: IdeLanguage; label: string }[] = [
   { id: 'markdown', label: 'Markdown' }
 ]
 
-interface Tab { id: number; title: string; path: string | null; model: monaco.editor.ITextModel }
+interface Tab { id: number; title: string; path: string | null; model: monaco.editor.ITextModel; github?: { owner: string; repo: string; path: string; sha?: string; canPush: boolean } }
 
 let panel: HTMLElement | null = null
 let editor: monaco.editor.IStandaloneCodeEditor | null = null
@@ -64,6 +65,7 @@ function switchTab(id: number): void {
   editor.setModel(tab.model)
   syncLangSelect(tab.model.getLanguageId())
   renderTabs()
+  updateGithubButtons()
 }
 
 function syncLangSelect(monacoLang: string): void {
@@ -89,6 +91,67 @@ export function ideOpenContent(title: string, path: string | null, content: stri
   }
   const tab = newTab(title, path, content, languageForFile(title))
   switchTab(tab.id)
+}
+
+function goIdePanel(): void {
+  document.dispatchEvent(new CustomEvent('dsh:navigate', { detail: 'ide' }))
+}
+
+/** GitHub 文件在 IDE 里打开为内存标签（保存即提交）。 */
+export function ideOpenGithubFile(owner: string, repo: string, path: string, content: string, sha: string, canPush: boolean): void {
+  const key = githubTabKey(owner, repo, path)
+  const existing = tabs.find((t) => t.github && githubTabKey(t.github.owner, t.github.repo, t.github.path) === key)
+  if (existing) { switchTab(existing.id); goIdePanel(); return }
+  const tab = newTab(tabTitleFromPath(path), null, content, languageForFile(path))
+  tab.github = { owner, repo, path, sha, canPush }
+  switchTab(tab.id)
+  goIdePanel()
+}
+
+async function saveGithubTab(tab: Tab): Promise<void> {
+  if (!tab.github) return
+  const message = window.prompt('提交说明（commit message）', 'Update ' + tab.github.path)
+  if (message === null) return
+  try {
+    await window.api.githubSaveFile(tab.github.owner, tab.github.repo, tab.github.path, tab.model.getValue(), message, tab.github.sha)
+    const { file } = await window.api.githubGetContents(tab.github.owner, tab.github.repo, tab.github.path)
+    if (file) tab.github.sha = file.sha
+    flashStatus('已提交到 GitHub')
+  } catch (e) {
+    window.alert('提交失败：' + githubErrorHint(e))
+  }
+}
+
+async function downloadGithubActive(): Promise<void> {
+  const tab = activeTab()
+  if (!tab?.github) return
+  try {
+    const dest = await window.api.githubPickSavePath(tab.github.path.split('/').pop() ?? tab.github.path)
+    if (!dest) return
+    await window.api.githubDownloadFile(tab.github.owner, tab.github.repo, tab.github.path, dest)
+    window.alert('已保存到：' + dest)
+  } catch (e) { window.alert('下载失败：' + githubErrorHint(e)) }
+}
+
+async function deleteGithubActive(): Promise<void> {
+  const tab = activeTab()
+  if (!tab?.github) return
+  if (!window.confirm('确定删除文件 ' + tab.github.path + ' 吗？')) return
+  const message = window.prompt('提交说明（commit message）', 'Delete ' + tab.github.path)
+  if (message === null) return
+  try {
+    await window.api.githubDeleteFile(tab.github.owner, tab.github.repo, tab.github.path, message, tab.github.sha ?? '')
+    closeTab(tab.id)
+  } catch (e) { window.alert('删除失败：' + githubErrorHint(e)) }
+}
+
+function updateGithubButtons(): void {
+  const tab = activeTab()
+  const dl = document.getElementById('ide-gh-download') as HTMLButtonElement | null
+  const del = document.getElementById('ide-gh-delete') as HTMLButtonElement | null
+  const isGh = !!tab?.github
+  if (dl) dl.disabled = !isGh
+  if (del) del.disabled = !isGh || !(tab?.github?.canPush ?? false)
 }
 
 function renderTabs(): void {
@@ -141,6 +204,7 @@ async function openFileInTab(path: string): Promise<void> {
 async function saveActive(): Promise<void> {
   const tab = activeTab()
   if (!tab) return
+  if (tab.github) { await saveGithubTab(tab); return }
   const content = tab.model.getValue()
   let path = tab.path
   if (!path) {
@@ -349,6 +413,14 @@ function buildDom(): void {
   toolbar.appendChild(aiBtn('AI 解释', 'explain'))
   toolbar.appendChild(aiBtn('AI 找错', 'debug'))
   toolbar.appendChild(aiBtn('AI 优化', 'optimize'))
+  const dlG = h('button', 'btn', '下载') as HTMLButtonElement
+  dlG.id = 'ide-gh-download'
+  dlG.addEventListener('click', () => void downloadGithubActive())
+  toolbar.appendChild(dlG)
+  const delG = h('button', 'btn', '删除') as HTMLButtonElement
+  delG.id = 'ide-gh-delete'
+  delG.addEventListener('click', () => void deleteGithubActive())
+  toolbar.appendChild(delG)
   toolbar.appendChild(h('span', 'spacer'))
   toolbar.appendChild(h('span', 'set-label', '语言'))
   const langSel = document.createElement('select')
@@ -415,4 +487,5 @@ export function initIde(): void {
   editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => void saveActive())
   const first = newTab('未命名', null, '', 'plaintext')
   switchTab(first.id)
+  updateGithubButtons()
 }

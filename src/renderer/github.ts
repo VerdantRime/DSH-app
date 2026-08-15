@@ -13,6 +13,7 @@ import DOMPurify from 'dompurify'
 import { renderMarkdown } from './markdown'
 import { parentPath, fileNameOf, joinRepoPath, validateNewFileName, breadcrumbSegments, formatFileSize, isMarkdownFile, githubErrorHint, isSafeRepoPath, fileTypeInfo, linkAction } from './github-utils'
 import { GITHUB_TOKEN_URL, TOKEN_HELP_STEPS } from './github-help'
+import { ideOpenGithubFile } from './ide'
 
 type ListMode = 'mine' | 'starred' | 'search'
 type Tab = 'files' | 'issues' | 'pulls' | 'commits' | 'readme'
@@ -352,8 +353,7 @@ async function loadFiles(): Promise<void> {
           filePath = n.path
           void loadFiles()
         } else {
-          filePath = n.path
-          void loadFileContent(n.path)
+          void openInIde(n.path)
         }
       })
       content.appendChild(row)
@@ -402,6 +402,17 @@ async function downloadSelected(): Promise<void> {
     void loadFiles()
   } catch (e) {
     window.alert('下载失败：' + errMsg(e))
+  }
+}
+
+async function openInIde(path: string): Promise<void> {
+  if (!currentRepo) return
+  try {
+    const { file } = await window.api.githubGetContents(currentRepo.owner, currentRepo.repo, path)
+    if (file) ideOpenGithubFile(currentRepo.owner, currentRepo.repo, path, file.content, file.sha, canPush)
+    else window.alert('无法打开该文件（可能为空或超过 1MB）')
+  } catch (e) {
+    window.alert('无法打开：' + errMsg(e))
   }
 }
 

@@ -40,6 +40,11 @@ export function extractCodeBlock(md: string): string | null {
   return last.replace(/^```[^\n]*\n/, '').replace(/```\s*$/, '').trim()
 }
 
+/** 生成 GitHub 文件的稳定标签标识。 */
+export function githubTabKey(owner: string, repo: string, path: string): string {
+  return 'github:' + owner + '/' + repo + '/' + path
+}
+
 /** 从完整路径取标签标题。 */
 export function tabTitleFromPath(path: string): string {
   const i = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'))

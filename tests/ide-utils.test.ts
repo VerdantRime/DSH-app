@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { languageForFile, tabTitleFromPath } from '../src/renderer/ide-utils'
+import { languageForFile, tabTitleFromPath, githubTabKey } from '../src/renderer/ide-utils'
 
 describe('IDE 语言识别', () => {
   it('按扩展名识别语言', () => {
@@ -20,6 +20,10 @@ describe('IDE 语言识别', () => {
   it('大小写不敏感', () => {
     expect(languageForFile('MAIN.PY')).toBe('python')
     expect(languageForFile('A.CPP')).toBe('cpp')
+  })
+
+  it('githubTabKey 生成稳定标识', () => {
+    expect(githubTabKey('a', 'b', 'c/x.md')).toBe('github:a/b/c/x.md')
   })
 
   it('从路径取标签标题', () => {
