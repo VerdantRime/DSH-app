@@ -3,6 +3,7 @@
    圆润、亲和、蓝白渐变品牌感；动效只用 transform/opacity。
    ============================================================ */
 * { box-sizing: border-box; }
+:root body { background: linear-gradient(180deg, #F7F9FE 0%, #F2F5FC 100%); }
 html, body { margin: 0; padding: 0; height: 100%; }
 body {
   display: flex;
@@ -335,6 +336,11 @@ body.ide-resizing { user-select: none; cursor: col-resize; }
 /* ============ 二次元主题装饰（糖果按钮 + 星点 + 渐变） ============ */
 [data-theme='anime'] body {
   background:
+    radial-gradient(2px 2px at 15% 22%, rgba(91, 123, 208, 0.35), transparent),
+    radial-gradient(2px 2px at 78% 14%, rgba(246, 168, 200, 0.35), transparent),
+    radial-gradient(2px 2px at 60% 72%, rgba(245, 200, 76, 0.42), transparent),
+    radial-gradient(2px 2px at 28% 82%, rgba(91, 123, 208, 0.30), transparent),
+    radial-gradient(2px 2px at 90% 62%, rgba(246, 168, 200, 0.30), transparent),
     radial-gradient(circle at 12% 18%, rgba(246, 168, 200, 0.22), transparent 42%),
     radial-gradient(circle at 88% 12%, rgba(91, 123, 208, 0.20), transparent 45%),
     radial-gradient(circle at 72% 88%, rgba(245, 200, 76, 0.18), transparent 42%),
@@ -349,6 +355,10 @@ body.ide-resizing { user-select: none; cursor: col-resize; }
 [data-theme='anime'] .ide-tab.active { border-bottom-color: var(--anime-pink-deep); color: var(--anime-pink-deep); }
 [data-theme='anime'] .brand-title { color: var(--brand-indigo); }
 [data-theme='anime'] .gh-file-icon.dir { color: var(--brand-blue); }
+[data-theme='anime'] .gh-card, [data-theme='anime'] .set-section { box-shadow: 0 4px 16px rgba(91, 123, 208, 0.12); }
+[data-theme='anime'] .btn { font-weight: 600; }
+[data-theme='anime'] .ide-tree-head, [data-theme='anime'] .ide-panel-head { color: var(--anime-pink-deep); }
+[data-theme='anime'] .brand-sub { color: var(--anime-pink-deep); }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
