@@ -15,6 +15,7 @@ import { renderMarkdown } from './markdown'
 import { parentPath, fileNameOf, joinRepoPath, validateNewFileName, breadcrumbSegments, formatFileSize, isMarkdownFile, githubErrorHint, isSafeRepoPath, fileTypeInfo, linkAction } from './github-utils'
 import { GITHUB_TOKEN_URL, TOKEN_HELP_STEPS } from './github-help'
 import { ideOpenGithubFile, ideOpenFolderAt } from './ide'
+import { showContextMenu, copyText } from './context-menu'
 
 type ListMode = 'mine' | 'starred' | 'search'
 type Tab = 'files' | 'issues' | 'pulls' | 'commits' | 'readme'
@@ -431,36 +432,6 @@ async function cloneRepoInto(): Promise<void> {
   }
 }
 
-let ctxMenu: HTMLElement | null = null
-
-function hideContextMenu(): void {
-  ctxMenu?.remove()
-  ctxMenu = null
-}
-
-function showContextMenu(x: number, y: number, items: { label: string; onClick: () => void }[]): void {
-  hideContextMenu()
-  const menu = h('div', 'gh-ctx-menu')
-  for (const it of items) {
-    const b = h('button', 'gh-ctx-item', it.label)
-    b.addEventListener('click', () => { hideContextMenu(); it.onClick() })
-    menu.appendChild(b)
-  }
-  menu.style.left = x + 'px'
-  menu.style.top = y + 'px'
-  document.body.appendChild(menu)
-  ctxMenu = menu
-  setTimeout(() => document.addEventListener('mousedown', onDocDown, { once: true }), 0)
-}
-
-function onDocDown(e: MouseEvent): void {
-  if (ctxMenu && !ctxMenu.contains(e.target as Node)) hideContextMenu()
-  else setTimeout(() => document.addEventListener('mousedown', onDocDown, { once: true }), 0)
-}
-
-function copyText(s: string): void {
-  navigator.clipboard.writeText(s).catch(() => window.alert('复制失败'))
-}
 
 async function deleteFileAt(n: FileNode): Promise<void> {
   if (!currentRepo) return

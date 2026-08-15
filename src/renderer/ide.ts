@@ -2,6 +2,7 @@ import monaco from './monaco-setup'
 import { languageForFile, tabTitleFromPath, isInteractiveSource, usesConsoleApis, defaultRunFileName, extractCodeBlock, githubTabKey, buildChatPrompt, canApplyAi, type ChatTurn, type IdeLanguage } from './ide-utils'
 import { diffLines } from 'diff'
 import { githubErrorHint } from './github-utils'
+import { showContextMenu, copyText, type CtxMenuItem } from './context-menu'
 import DOMPurify from 'dompurify'
 import { renderMarkdown } from './markdown'
 import type { IdeRunResult } from '../shared/types'
@@ -324,6 +325,52 @@ export function ideOpenFolderAt(dir: string): void {
   document.dispatchEvent(new CustomEvent('dsh:navigate', { detail: 'ide' }))
 }
 
+async function renameLocalPath(path: string): Promise<void> {
+  const oldName = tabTitleFromPath(path)
+  const newName = window.prompt('新名称', oldName)
+  if (!newName || !newName.trim() || newName.trim() === oldName) return
+  try {
+    const { newPath } = await window.api.ideRenameFile(path, newName.trim())
+    const t = tabs.find((x) => x.path === path)
+    if (t) {
+      t.path = newPath
+      t.title = tabTitleFromPath(newPath)
+      monaco.editor.setModelLanguage(t.model, MONACO_LANG[languageForFile(newPath)])
+      renderTabs()
+    }
+    void renderTree()
+    flashStatus('已重命名为：' + newPath)
+  } catch (err) { window.alert('重命名失败：' + (err instanceof Error ? err.message : String(err))) }
+}
+
+async function deleteLocalPath(path: string): Promise<void> {
+  if (!window.confirm('确定删除 ' + path + ' 吗？')) return
+  try {
+    await window.api.ideDeleteFile(path)
+    const t = tabs.find((x) => x.path === path)
+    if (t) closeTab(t.id)
+    void renderTree()
+    flashStatus('已删除：' + path)
+  } catch (err) { window.alert('删除失败：' + (err instanceof Error ? err.message : String(err))) }
+}
+
+function treeContextItems(e: { name: string; path: string; type: 'file' | 'dir' }): CtxMenuItem[] {
+  if (e.type === 'dir') {
+    return [
+      { label: '打开', onClick: () => { treeDir = e.path; void renderTree() } },
+      { label: '复制路径', onClick: () => copyText(e.path) },
+      { label: '重命名', onClick: () => void renameLocalPath(e.path) }
+    ]
+  }
+  return [
+    { label: '打开', onClick: () => void openFileInTab(e.path) },
+    { label: '复制名称', onClick: () => copyText(e.name) },
+    { label: '复制路径', onClick: () => copyText(e.path) },
+    { label: '重命名', onClick: () => void renameLocalPath(e.path) },
+    { label: '删除', onClick: () => void deleteLocalPath(e.path) }
+  ]
+}
+
 async function renderTree(): Promise<void> {
   const list = document.getElementById('ide-tree-list')
   if (!list) return
@@ -345,6 +392,10 @@ async function renderTree(): Promise<void> {
       row.addEventListener('click', () => {
         if (e.type === 'dir') { treeDir = e.path; void renderTree() }
         else void openFileInTab(e.path)
+      })
+      row.addEventListener('contextmenu', (ev) => {
+        ev.preventDefault()
+        showContextMenu(ev.clientX, ev.clientY, treeContextItems(e))
       })
       list.appendChild(row)
     }
