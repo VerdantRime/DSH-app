@@ -1,5 +1,5 @@
 import monaco from './monaco-setup'
-import { languageForFile, tabTitleFromPath, isInteractiveSource, defaultRunFileName, extractCodeBlock, githubTabKey, buildChatPrompt, type ChatTurn, type IdeLanguage } from './ide-utils'
+import { languageForFile, tabTitleFromPath, isInteractiveSource, usesConsoleApis, defaultRunFileName, extractCodeBlock, githubTabKey, buildChatPrompt, type ChatTurn, type IdeLanguage } from './ide-utils'
 import { githubErrorHint } from './github-utils'
 import DOMPurify from 'dompurify'
 import { renderMarkdown } from './markdown'
@@ -468,7 +468,7 @@ async function runActive(): Promise<void> {
     return
   }
   const content = tab.model.getValue()
-  const interactive = isInteractiveSource(content, lang)
+  const interactive = isInteractiveSource(content, lang) || usesConsoleApis(content)
   try {
     let targetPath = tab.path
     if (!targetPath) {

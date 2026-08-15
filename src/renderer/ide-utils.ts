@@ -16,6 +16,11 @@ export function languageForFile(name: string): IdeLanguage {
   return 'plaintext'
 }
 
+/** 判断代码是否依赖真正的控制台（system 命令、conio、getch/kbhit 等）。 */
+export function usesConsoleApis(content: string): boolean {
+  return /system\s*\(|#\s*include\s*[<"']conio\.h|getch\s*\(|kbhit\s*\(|gotoxy\s*\(|SetConsoleTextAttribute/.test(content)
+}
+
 /** 判断源码是否含交互输入（用于决定弹独立控制台）。 */
 export function isInteractiveSource(content: string, lang: IdeLanguage): boolean {
   if (lang === 'python') return /input\s*\(|sys\.stdin|raw_input/.test(content)

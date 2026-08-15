@@ -3,7 +3,7 @@ import { promises as fs } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
 import { toolPath, projectSources, javaMainClass, decodeOutput, buildBatchScript, isLinkError, run, type RunResult } from '../src/main/runner'
-import { isInteractiveSource, defaultRunFileName } from '../src/renderer/ide-utils'
+import { isInteractiveSource, usesConsoleApis, defaultRunFileName } from '../src/renderer/ide-utils'
 
 describe('runner 纯函数', () => {
   it('toolPath 解析目录/可执行/默认', () => {
@@ -59,6 +59,13 @@ describe('交互输入检测', () => {
     expect(isInteractiveSource('Scanner sc = new Scanner(System.in);', 'java')).toBe(true)
     expect(isInteractiveSource('print("hi")', 'python')).toBe(false)
     expect(isInteractiveSource('printf("hi");', 'cpp')).toBe(false)
+  })
+
+  it('usesConsoleApis 识别 system/conio/getch 等控制台专属 API', () => {
+    expect(usesConsoleApis('system("color 0c");')).toBe(true)
+    expect(usesConsoleApis('#include <conio.h>\nint x = getch();')).toBe(true)
+    expect(usesConsoleApis('printf("hello");')).toBe(false)
+    expect(usesConsoleApis('scanf("%d", &x);')).toBe(false)
   })
 
   it('默认运行文件名', () => {
