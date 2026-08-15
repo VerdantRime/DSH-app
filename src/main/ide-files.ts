@@ -63,3 +63,13 @@ export async function writeTextFile(path: string, content: string, encoding: Fil
   const buf = encoding === 'gbk' ? iconv.encode(content, 'gbk') : Buffer.from(content, 'utf-8')
   await fs.writeFile(path, buf)
 }
+
+export async function deleteFile(path: string): Promise<void> {
+  await fs.unlink(path)
+}
+
+export async function renameFile(oldPath: string, newName: string): Promise<string> {
+  const newPath = join(dirname(oldPath), newName)
+  await fs.rename(oldPath, newPath)
+  return newPath
+}

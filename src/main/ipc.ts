@@ -1,7 +1,7 @@
 import { app, dialog, ipcMain, shell, type BrowserWindow } from 'electron'
 import { IPC } from '../shared/types'
 import { translateMarkdown } from './translate'
-import { listDirEntries, readFileWithPath, writeTextFile } from './ide-files'
+import { listDirEntries, readFileWithPath, writeTextFile, deleteFile, renameFile } from './ide-files'
 import { detectToolchains } from './toolchain'
 import { run } from './runner'
 import { tmpdir } from 'os'
@@ -57,6 +57,8 @@ export function registerIpc(deps: IpcDeps): void {
   ipcMain.handle(IPC.ideReadFile, (_e, p: string) => readFileWithPath(p))
   ipcMain.handle(IPC.ideListDir, (_e, p: string) => listDirEntries(p))
   ipcMain.handle(IPC.ideWriteFile, (_e, p: string, c: string, enc?: 'utf-8' | 'gbk') => writeTextFile(p, c, enc))
+  ipcMain.handle(IPC.ideDeleteFile, (_e, p: string) => deleteFile(p))
+  ipcMain.handle(IPC.ideRenameFile, async (_e, o: string, n: string) => ({ newPath: await renameFile(o, n) }))
   ipcMain.handle(IPC.ideDetectTools, () => detectToolchains())
   ipcMain.handle(IPC.ideRun, (_e, req: IdeRunRequest) => {
     const ide = deps.store.get().ide

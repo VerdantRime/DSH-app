@@ -200,6 +200,8 @@ export const IPC = {
   ideReadFile: 'ide:readFile',
   ideListDir: 'ide:listDir',
   ideWriteFile: 'ide:writeFile',
+  ideDeleteFile: 'ide:deleteFile',
+  ideRenameFile: 'ide:renameFile',
   ideDetectTools: 'ide:detectTools',
   ideRun: 'ide:run',
   ideRunTemp: 'ide:runTemp',
@@ -259,6 +261,8 @@ export interface WorkdeskApi {
   ideReadFile(path: string): Promise<{ path: string; content: string; encoding: 'utf-8' | 'gbk' }>
   ideListDir(path: string): Promise<{ name: string; path: string; type: 'file' | 'dir' }[]>
   ideWriteFile(path: string, content: string, encoding?: 'utf-8' | 'gbk'): Promise<void>
+  ideDeleteFile(path: string): Promise<void>
+  ideRenameFile(oldPath: string, newName: string): Promise<{ newPath: string }>
   ideDetectTools(): Promise<ToolchainReport>
   ideRun(req: IdeRunRequest): Promise<IdeRunResult>
   ideRunTemp(fileName: string): Promise<string>

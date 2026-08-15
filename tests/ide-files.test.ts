@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { promises as fs } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
-import { sortDirEntries, listDirEntries, readTextFile, readFileWithPath, writeTextFile, decodeText, detectEncoding, type DirEntry } from '../src/main/ide-files'
+import { sortDirEntries, listDirEntries, readTextFile, readFileWithPath, writeTextFile, decodeText, detectEncoding, deleteFile, renameFile, type DirEntry } from '../src/main/ide-files'
 
 describe('IDE 文件服务', () => {
   it('sortDirEntries 文件夹置顶且不修改原数组', () => {
@@ -53,6 +53,18 @@ describe('IDE 文件服务', () => {
     const buf = await fs.readFile(f)
     expect(decodeText(buf)).toBe('打印三角形')
     expect(detectEncoding(buf)).toBe('gbk')
+    await fs.rm(dir, { recursive: true, force: true })
+  })
+
+  it('deleteFile 与 renameFile 操作真实文件', async () => {
+    const dir = await fs.mkdtemp(join(tmpdir(), 'ide-dr-'))
+    const f = join(dir, 'old.txt')
+    await writeTextFile(f, 'x')
+    const newPath = await renameFile(f, 'new.txt')
+    expect(newPath).toBe(join(dir, 'new.txt'))
+    expect(await readTextFile(newPath)).toBe('x')
+    await deleteFile(newPath)
+    await expect(readTextFile(newPath)).rejects.toThrow()
     await fs.rm(dir, { recursive: true, force: true })
   })
 

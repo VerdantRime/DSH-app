@@ -503,6 +503,60 @@ async function loadAiModels(): Promise<void> {
   } catch { /* 保持空下拉 */ }
 }
 
+function copyAll(): void {
+  const tab = activeTab()
+  if (!tab) return
+  navigator.clipboard.writeText(tab.model.getValue()).then(() => flashStatus('已复制全文')).catch(() => window.alert('复制失败'))
+}
+
+async function deleteActiveFile(): Promise<void> {
+  const tab = activeTab()
+  if (!tab) return
+  if (tab.github) { await deleteGithubActive(); return }
+  const path = tab.path
+  if (!path) { window.alert('当前标签未保存到磁盘，无需删除'); return }
+  if (!window.confirm('确定删除文件 ' + path + ' 吗？')) return
+  try {
+    await window.api.ideDeleteFile(path)
+    closeTab(tab.id)
+    flashStatus('已删除：' + path)
+  } catch (e) { window.alert('删除失败：' + (e instanceof Error ? e.message : String(e))) }
+}
+
+async function renameActiveFile(): Promise<void> {
+  const tab = activeTab()
+  if (!tab || tab.github || !tab.path) return
+  const oldName = tabTitleFromPath(tab.path)
+  const newName = window.prompt('新文件名', oldName)
+  if (!newName || !newName.trim() || newName.trim() === oldName) return
+  try {
+    const { newPath } = await window.api.ideRenameFile(tab.path, newName.trim())
+    tab.path = newPath
+    tab.title = tabTitleFromPath(newPath)
+    monaco.editor.setModelLanguage(tab.model, MONACO_LANG[languageForFile(newPath)])
+    renderTabs()
+    flashStatus('已重命名为：' + newPath)
+  } catch (e) { window.alert('重命名失败：' + (e instanceof Error ? e.message : String(e))) }
+}
+
+function revealInTree(): void {
+  const tab = activeTab()
+  if (!tab || !tab.path || !treeRoot) return
+  if (!tab.path.startsWith(treeRoot)) { window.alert('当前文件不在已打开的项目文件夹内'); return }
+  treeDir = parentDir(tab.path)
+  document.getElementById('ide-tree')?.classList.remove('hidden')
+  void renderTree()
+  flashStatus('已定位到：' + treeDir)
+}
+
+function registerContextActions(): void {
+  if (!editor) return
+  editor.addAction({ id: 'dsh-copy-all', label: '复制全文', contextMenuGroupId: 'dsh', contextMenuOrder: 1, run: () => copyAll() })
+  editor.addAction({ id: 'dsh-delete-file', label: '删除文件', contextMenuGroupId: 'dsh', contextMenuOrder: 2, run: () => void deleteActiveFile() })
+  editor.addAction({ id: 'dsh-rename-file', label: '重命名文件', contextMenuGroupId: 'dsh', contextMenuOrder: 3, run: () => void renameActiveFile() })
+  editor.addAction({ id: 'dsh-reveal-file', label: '在文件树中定位', contextMenuGroupId: 'dsh', contextMenuOrder: 4, run: () => revealInTree() })
+}
+
 function buildDom(): void {
   if (!panel) return
   panel.replaceChildren()
@@ -642,6 +696,7 @@ export function initIde(): void {
     fontSize: 14, tabSize: 4, minimap: { enabled: true }
   })
   editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => void saveActive())
+  registerContextActions()
   const first = newTab('未命名', null, '', 'plaintext')
   switchTab(first.id)
   updateGithubButtons()
