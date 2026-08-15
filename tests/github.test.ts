@@ -1,11 +1,17 @@
 import { describe, it, expect } from 'vitest'
-import { GithubClient, validateGithubInput, mapRepoSummary, mapPullSummary, mapCommitSummary, mapIssueSummary, sortFileTree, mapFileNode } from '../src/main/github'
+import { GithubClient, validateGithubInput, mapRepoSummary, mapRepoDetail, mapPullSummary, mapCommitSummary, mapIssueSummary, sortFileTree, mapFileNode } from '../src/main/github'
 
 function node(name: string, type: 'file' | 'dir', path = name): any {
   return { name, path, type }
 }
 
 describe('github mappers', () => {
+  it('mapRepoDetail 映射写入权限 canPush', () => {
+    expect(mapRepoDetail({ id: 1, name: 'x', full_name: 'a/x', owner: { login: 'a' }, permissions: { push: true } }).canPush).toBe(true)
+    expect(mapRepoDetail({ id: 1, name: 'x', full_name: 'a/x', owner: { login: 'a' } }).canPush).toBe(false)
+    expect(mapRepoDetail({ id: 1, name: 'x', full_name: 'a/x', owner: { login: 'a' }, permissions: { push: false } }).canPush).toBe(false)
+  })
+
   it('mapFileNode 映射 size', () => {
     const n = mapFileNode({ name: 'a.png', path: 'a.png', type: 'file', size: 2048 })
     expect(n.size).toBe(2048)

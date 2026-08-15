@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parentPath, fileNameOf, joinRepoPath, validateNewFileName, breadcrumbSegments, formatFileSize, isMarkdownFile } from '../src/renderer/github-utils'
+import { parentPath, fileNameOf, joinRepoPath, validateNewFileName, breadcrumbSegments, formatFileSize, isMarkdownFile, githubErrorHint } from '../src/renderer/github-utils'
 
 describe('github-utils 路径工具', () => {
   it('parentPath 返回上级目录', () => {
@@ -26,6 +26,12 @@ describe('github-utils 路径工具', () => {
       { label: 'a', path: 'docs/a' },
       { label: 'b', path: 'docs/a/b' }
     ])
+  })
+
+  it('githubErrorHint 转成中文可读提示', () => {
+    expect(githubErrorHint(new Error('403 Resource not accessible by integration'))).toContain('无写入权限')
+    expect(githubErrorHint(new Error('Unprocessable Entity'))).toContain('422')
+    expect(githubErrorHint(new Error('boom'))).toBe('boom')
   })
 
   it('isMarkdownFile 识别常见 md 扩展名', () => {

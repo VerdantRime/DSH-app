@@ -44,7 +44,8 @@ export function mapRepoDetail(r: any): RepoDetail {
     watchers: r.watchers_count ?? 0,
     language: r.language ?? null,
     htmlUrl: r.html_url ?? '',
-    defaultBranch: r.default_branch ?? 'main'
+    defaultBranch: r.default_branch ?? 'main',
+    canPush: r.permissions?.push === true
   }
 }
 

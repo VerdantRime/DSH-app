@@ -141,6 +141,7 @@ export interface RepoDetail {
   language: string | null
   htmlUrl: string
   defaultBranch: string
+  canPush: boolean
 }
 
 export type RepoKind = 'mine' | 'starred'

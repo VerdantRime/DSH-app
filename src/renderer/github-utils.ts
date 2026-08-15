@@ -15,6 +15,16 @@ export function joinRepoPath(dir: string, name: string): string {
   return d ? d + '/' + name : name
 }
 
+/** 将 GitHub 写操作错误转成中文可读提示。 */
+export function githubErrorHint(e: unknown): string {
+  const m = e instanceof Error ? e.message : String(e)
+  if (/403|resource not accessible|not found/i.test(m)) {
+    return '无写入权限（403）：请确认 token 对该仓库有 Read and write 权限，且仓库已包含在 token 授权范围内'
+  }
+  if (/422|unprocessable/i.test(m)) return '操作失败（422）：文件可能已被他人修改，请刷新后重试'
+  return m
+}
+
 /** 校验新建文件名；合法返回 null，否则返回中文错误提示。 */
 export function validateNewFileName(name: string): string | null {
   const n = name.trim()

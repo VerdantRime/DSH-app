@@ -11,7 +11,7 @@ import type {
 import { FOLDER_ICON, FILE_ICON, GITHUB_ICON } from './icons'
 import DOMPurify from 'dompurify'
 import { renderMarkdown } from './markdown'
-import { parentPath, fileNameOf, joinRepoPath, validateNewFileName, breadcrumbSegments, formatFileSize, isMarkdownFile } from './github-utils'
+import { parentPath, fileNameOf, joinRepoPath, validateNewFileName, breadcrumbSegments, formatFileSize, isMarkdownFile, githubErrorHint } from './github-utils'
 import { GITHUB_TOKEN_URL, TOKEN_HELP_STEPS } from './github-help'
 
 type ListMode = 'mine' | 'starred' | 'search'
@@ -29,6 +29,7 @@ let issueState: 'open' | 'closed' = 'open'
 let pullState: 'open' | 'closed' = 'open'
 let currentFileSha = ''
 let currentFileContent = ''
+let canPush = false
 
 function h(tag: string, className?: string, text?: string): HTMLElement {
   const e = document.createElement(tag)
@@ -184,6 +185,7 @@ function openRepo(owner: string, repo: string): void {
   currentRepo = { owner, repo }
   currentTab = 'files'
   filePath = ''
+  canPush = false
   void renderRepo()
 }
 
@@ -226,12 +228,15 @@ async function renderRepo(): Promise<void> {
 
   try {
     const d = await window.api.githubGetRepo(currentRepo.owner, currentRepo.repo)
+    canPush = d.canPush
     const metaEl = document.getElementById('gh-repo-meta')
     if (metaEl) {
       metaEl.textContent = '⭐ ' + d.stars + '  🍴 ' + d.forks + '  👁 ' + d.watchers + '  ' + (d.language ?? '')
+      metaEl.appendChild(h('span', 'gh-meta-tag', canPush ? '可写' : '只读'))
       metaEl.appendChild(btn('在 GitHub 打开', () => void window.api.openExternal(d.htmlUrl)))
     }
   } catch {
+    canPush = false
     const metaEl = document.getElementById('gh-repo-meta')
     if (metaEl) metaEl.textContent = '无法加载仓库信息'
   }
@@ -280,10 +285,14 @@ async function loadFiles(): Promise<void> {
     }
     content.appendChild(bc)
     const tools = h('div', 'gh-bar')
-    const upBtn = btn('上传文件', () => pickAndUpload())
-    upBtn.classList.add('primary')
-    tools.appendChild(upBtn)
-    tools.appendChild(btn('新建文件', () => createFile()))
+    if (canPush) {
+      const upBtn = btn('上传文件', () => pickAndUpload())
+      upBtn.classList.add('primary')
+      tools.appendChild(upBtn)
+      tools.appendChild(btn('新建文件', () => createFile()))
+    } else {
+      tools.appendChild(h('span', 'gh-note-readonly', '只读仓库（无写入权限），仅可浏览/下载'))
+    }
     content.appendChild(tools)
     if (tree.length === 0) {
       content.appendChild(h('div', 'gh-empty', '空目录'))
@@ -343,7 +352,7 @@ function pickAndUpload(): void {
           await window.api.githubUploadFile(currentRepo!.owner, currentRepo!.repo, target, b64, message, sha)
           void loadFiles()
         } catch (e) {
-          window.alert('上传失败：' + errMsg(e))
+          window.alert('上传失败：' + githubErrorHint(e))
         }
       })()
     }
@@ -398,20 +407,24 @@ async function loadFileContent(path: string): Promise<void> {
         filePath = parentPath(path)
         void loadFiles()
       }))
-      bar.appendChild(btn('编辑', () => renderEditor(path, currentFileContent, currentFileSha)))
+      if (canPush) {
+        bar.appendChild(btn('编辑', () => renderEditor(path, currentFileContent, currentFileSha)))
+      }
       bar.appendChild(btn('下载', () => void downloadFile(path)))
-      bar.appendChild(btn('删除', () => {
-        if (!window.confirm('确定删除文件 ' + path + ' 吗？此操作会产生一次删除提交。')) return
-        const message = window.prompt('提交说明（commit message）', 'Delete ' + path)
-        if (message === null) return
-        void window.api
-          .githubDeleteFile(currentRepo!.owner, currentRepo!.repo, path, message, currentFileSha)
-          .then(() => {
-            filePath = parentPath(path)
-            void loadFiles()
-          })
-          .catch((e) => window.alert('删除失败：' + errMsg(e)))
-      }))
+      if (canPush) {
+        bar.appendChild(btn('删除', () => {
+          if (!window.confirm('确定删除文件 ' + path + ' 吗？此操作会产生一次删除提交。')) return
+          const message = window.prompt('提交说明（commit message）', 'Delete ' + path)
+          if (message === null) return
+          void window.api
+            .githubDeleteFile(currentRepo!.owner, currentRepo!.repo, path, message, currentFileSha)
+            .then(() => {
+              filePath = parentPath(path)
+              void loadFiles()
+            })
+            .catch((e) => window.alert('删除失败：' + githubErrorHint(e)))
+        }))
+      }
       content.appendChild(bar)
       if (isMarkdownFile(path)) {
         const body = h('div', 'gh-readme')
@@ -467,7 +480,7 @@ function renderEditor(path: string, initialContent?: string, sha?: string, after
     void window.api
       .githubSaveFile(currentRepo!.owner, currentRepo!.repo, path, ta.value, message, sha)
       .then(done)
-      .catch((e) => window.alert('提交失败：' + errMsg(e)))
+      .catch((e) => window.alert('提交失败：' + githubErrorHint(e)))
   })
   submitBtn.classList.add('primary')
   row.appendChild(btn('取消', done))
