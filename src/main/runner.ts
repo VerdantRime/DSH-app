@@ -2,6 +2,7 @@ import { spawn, spawnSync } from 'child_process'
 import { readdirSync, writeFileSync, mkdirSync } from 'fs'
 import { tmpdir } from 'os'
 import { join, dirname, basename } from 'path'
+import * as iconv from 'iconv-lite'
 
 export type RunLanguage = 'python' | 'cpp' | 'java'
 
@@ -54,27 +55,34 @@ function runCapture(cmd: string, args: string[], cwd: string, timeoutMs = 30000)
   return { code: r.status, out: decodeOutput(r.stdout) + decodeOutput(r.stderr) }
 }
 
-/** 生成交互式运行的批处理内容（在新控制台窗口执行并停留）。 */
-export function buildBatchScript(cmdline: string): string {
-  return '@echo off\r\n' + cmdline + '\r\necho.\r\necho [按任意键关闭]\r\npause >nul\r\n'
+function quoteArg(a: string): string {
+  if (/[\s"&|<>^]/.test(a)) return '"' + a.replace(/"/g, '') + '"'
+  return a
 }
 
-/** 用 start + 批处理可靠地弹出独立控制台窗口（GUI 应用需新建控制台）。 */
-function consoleRun(cmdline: string): void {
+/** 生成交互式运行的批处理内容（cd 到工作目录并停留）。 */
+export function buildBatchScript(program: string, args: string[], cwd: string): string {
+  const line = [program, ...args].map(quoteArg).join(' ')
+  return '@echo off\r\ncd /d "' + cwd + '"\r\n' + line + '\r\necho.\r\necho [按任意键关闭]\r\npause >nul\r\n'
+}
+
+/** 用 start + 批处理可靠地弹出独立控制台窗口；批处理以 GBK 编码写入，中文路径不乱码。 */
+function consoleRun(program: string, args: string[], cwd: string): void {
   try {
     const bat = join(tmpdir(), 'dsh-ide', 'run-' + Date.now() + '.bat')
     mkdirSync(dirname(bat), { recursive: true })
-    writeFileSync(bat, buildBatchScript(cmdline))
+    writeFileSync(bat, iconv.encode(buildBatchScript(program, args, cwd), 'gbk'))
     spawn('cmd.exe', ['/c', 'start', '', bat], { detached: true, stdio: 'ignore', windowsHide: false }).unref()
   } catch {
-    spawn('cmd.exe', ['/c', 'start', '', 'cmd.exe', '/k', cmdline], { detached: true, stdio: 'ignore', windowsHide: false }).unref()
+    const line = [program, ...args].map(quoteArg).join(' ')
+    spawn('cmd.exe', ['/c', 'start', '', 'cmd.exe', '/k', line], { detached: true, stdio: 'ignore', windowsHide: false }).unref()
   }
 }
 
 function runPython(req: RunRequest): RunResult {
   const python = toolPath(req.tools?.python, 'python.exe')
   if (req.interactive) {
-    consoleRun('"' + python + '" "' + req.targetPath + '"')
+    consoleRun(python, [req.targetPath], dirname(req.targetPath))
     return { ok: true, output: '', exitCode: null, interactive: true }
   }
   const r = runCapture(python, [req.targetPath], dirname(req.targetPath))
@@ -91,7 +99,7 @@ function runCpp(req: RunRequest): RunResult {
     return { ok: false, output: compile.out, exitCode: compile.code, interactive: false }
   }
   if (req.interactive) {
-    consoleRun('"' + exe + '"')
+    consoleRun(exe, [], dir)
     return { ok: true, output: '', exitCode: null, interactive: true }
   }
   const r = runCapture(exe, [], dir)
@@ -108,7 +116,7 @@ function runJava(req: RunRequest): RunResult {
     return { ok: false, output: compile.out, exitCode: compile.code, interactive: false }
   }
   if (req.interactive) {
-    consoleRun('"' + java + '" -cp "' + dir + '" ' + cls)
+    consoleRun(java, ['-cp', dir, cls], dir)
     return { ok: true, output: '', exitCode: null, interactive: true }
   }
   const r = runCapture(java, ['-cp', dir, cls], dir)

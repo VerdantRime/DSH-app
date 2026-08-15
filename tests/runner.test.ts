@@ -28,10 +28,11 @@ describe('runner 纯函数', () => {
     expect(javaMainClass('C:\\x\\Main.java')).toBe('Main')
   })
 
-  it('buildBatchScript 包含命令与暂停', () => {
-    const bat = buildBatchScript('"C:\\x\\a.exe"')
+  it('buildBatchScript 包含 cd、命令与暂停（中文路径）', () => {
+    const bat = buildBatchScript('C:\\test\\后续法建链表.exe', [], 'C:\\test')
     expect(bat).toContain('@echo off')
-    expect(bat).toContain('"C:\\x\\a.exe"')
+    expect(bat).toContain('cd /d')
+    expect(bat).toContain('后续法建链表.exe')
     expect(bat).toContain('pause')
   })
 
