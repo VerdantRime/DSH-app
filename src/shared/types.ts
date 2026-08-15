@@ -89,6 +89,9 @@ export interface ReadmeContent {
 export interface ToolInfo { found: boolean; version: string; command: string }
 export interface ToolchainReport { python: ToolInfo; gcc: ToolInfo; gpp: ToolInfo; java: ToolInfo }
 
+export interface IdeRunRequest { language: 'python' | 'cpp' | 'java'; targetPath: string; multiFile: boolean; interactive: boolean }
+export interface IdeRunResult { ok: boolean; output: string; exitCode: number | null; interactive: boolean }
+
 export interface IssueSummary {
   number: number
   title: string
@@ -198,6 +201,8 @@ export const IPC = {
   ideListDir: 'ide:listDir',
   ideWriteFile: 'ide:writeFile',
   ideDetectTools: 'ide:detectTools',
+  ideRun: 'ide:run',
+  ideRunTemp: 'ide:runTemp',
   appQuitReal: 'app:quitReal',
   appShowWindow: 'app:showWindow',
   appNavigate: 'app:navigate',
@@ -249,6 +254,8 @@ export interface WorkdeskApi {
   ideListDir(path: string): Promise<{ name: string; path: string; type: 'file' | 'dir' }[]>
   ideWriteFile(path: string, content: string): Promise<void>
   ideDetectTools(): Promise<ToolchainReport>
+  ideRun(req: IdeRunRequest): Promise<IdeRunResult>
+  ideRunTemp(fileName: string): Promise<string>
   quitReal(): Promise<void>
   showWindow(): Promise<void>
   onNavigate(cb: (panelId: string) => void): () => void

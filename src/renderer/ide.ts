@@ -1,5 +1,6 @@
 import monaco from './monaco-setup'
-import { languageForFile, tabTitleFromPath, type IdeLanguage } from './ide-utils'
+import { languageForFile, tabTitleFromPath, isInteractiveSource, defaultRunFileName, type IdeLanguage } from './ide-utils'
+import type { IdeRunResult } from '../shared/types'
 
 const MONACO_LANG: Record<IdeLanguage, string> = {
   python: 'python', cpp: 'cpp', java: 'java', javascript: 'javascript', typescript: 'typescript',
@@ -201,6 +202,47 @@ async function renderTree(): Promise<void> {
   } catch (e) { list.replaceChildren(h('div', 'gh-error', '读取目录失败')) }
 }
 
+function runLanguage(tab: Tab): 'python' | 'cpp' | 'java' | null {
+  const ml = tab.model.getLanguageId()
+  if (ml === 'python' || ml === 'cpp' || ml === 'java') return ml as 'python' | 'cpp' | 'java'
+  const l = languageForFile(tab.title)
+  return l === 'python' || l === 'cpp' || l === 'java' ? l : null
+}
+
+function showOutput(text: string): void {
+  const bottom = document.getElementById('ide-bottom')
+  const out = document.getElementById('ide-run-output')
+  if (!bottom || !out) return
+  bottom.classList.remove('hidden')
+  out.textContent = text
+}
+
+async function runActive(): Promise<void> {
+  const tab = activeTab()
+  if (!tab) return
+  const lang = runLanguage(tab)
+  if (!lang) {
+    window.alert('当前文件语言不支持一键运行（支持 Python / C / C++ / Java）。请手动把语言切换为其中之一。')
+    return
+  }
+  const content = tab.model.getValue()
+  const interactive = isInteractiveSource(content, lang)
+  try {
+    let targetPath = tab.path
+    if (!targetPath) {
+      targetPath = await window.api.ideRunTemp(defaultRunFileName(lang))
+    }
+    await window.api.ideWriteFile(targetPath, content)
+    const multiFile = treeRoot !== null && targetPath.startsWith(treeRoot)
+    showOutput('运行中…')
+    const res: IdeRunResult = await window.api.ideRun({ language: lang, targetPath, multiFile, interactive })
+    if (res.interactive) showOutput('已在新控制台窗口中运行（交互式程序）')
+    else showOutput((res.output || '(无输出)') + (res.exitCode !== null ? '\n[退出码 ' + res.exitCode + ']' : ''))
+  } catch (e) {
+    showOutput('运行失败：' + (e instanceof Error ? e.message : String(e)))
+  }
+}
+
 function buildDom(): void {
   if (!panel) return
   panel.replaceChildren()
@@ -217,6 +259,9 @@ function buildDom(): void {
   const saveBtn = h('button', 'btn primary', '保存')
   saveBtn.addEventListener('click', () => void saveActive())
   toolbar.appendChild(saveBtn)
+  const runBtn = h('button', 'btn', '运行')
+  runBtn.addEventListener('click', () => void runActive())
+  toolbar.appendChild(runBtn)
   toolbar.appendChild(h('span', 'spacer'))
   toolbar.appendChild(h('span', 'set-label', '语言'))
   const langSel = document.createElement('select')

@@ -16,6 +16,22 @@ export function languageForFile(name: string): IdeLanguage {
   return 'plaintext'
 }
 
+/** 判断源码是否含交互输入（用于决定弹独立控制台）。 */
+export function isInteractiveSource(content: string, lang: IdeLanguage): boolean {
+  if (lang === 'python') return /input\s*\(|sys\.stdin|raw_input/.test(content)
+  if (lang === 'cpp') return /scanf\s*\(|getchar\s*\(|gets\s*\(|cin\s*>>|getline\s*\(/.test(content)
+  if (lang === 'java') return /Scanner|nextLine|nextInt|next\s*\(/.test(content)
+  return false
+}
+
+/** 各语言默认临时文件名。 */
+export function defaultRunFileName(lang: IdeLanguage): string {
+  if (lang === 'python') return 'main.py'
+  if (lang === 'cpp') return 'main.cpp'
+  if (lang === 'java') return 'Main.java'
+  return 'main.txt'
+}
+
 /** 从完整路径取标签标题。 */
 export function tabTitleFromPath(path: string): string {
   const i = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'))

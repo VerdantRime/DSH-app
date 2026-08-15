@@ -3,6 +3,10 @@ import { IPC } from '../shared/types'
 import { translateMarkdown } from './translate'
 import { listDirEntries, readTextFile, writeTextFile } from './ide-files'
 import { detectToolchains } from './toolchain'
+import { run } from './runner'
+import { tmpdir } from 'os'
+import { join } from 'path'
+import type { IdeRunRequest } from '../shared/types'
 import type { ConfigStore } from './store'
 import type { HarnessManager } from './harness-manager'
 import type { GithubService } from './github-service'
@@ -52,6 +56,19 @@ export function registerIpc(deps: IpcDeps): void {
   ipcMain.handle(IPC.ideListDir, (_e, p: string) => listDirEntries(p))
   ipcMain.handle(IPC.ideWriteFile, (_e, p: string, c: string) => writeTextFile(p, c))
   ipcMain.handle(IPC.ideDetectTools, () => detectToolchains())
+  ipcMain.handle(IPC.ideRun, (_e, req: IdeRunRequest) => {
+    const ide = deps.store.get().ide
+    return run({
+      ...req,
+      tools: {
+        python: ide.pythonPath || undefined,
+        gpp: ide.gccPath || undefined,
+        javac: ide.javaPath || undefined,
+        java: ide.javaPath || undefined
+      }
+    })
+  })
+  ipcMain.handle(IPC.ideRunTemp, (_e, fileName: string) => join(tmpdir(), 'dsh-ide', fileName))
   ipcMain.handle(IPC.appShowWindow, () => deps.getWindow()?.show())
   ipcMain.handle(IPC.appQuitReal, () => deps.quit())
   // harness
