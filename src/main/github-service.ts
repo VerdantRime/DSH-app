@@ -114,4 +114,15 @@ export class GithubService {
   async deleteFile(owner: string, repo: string, path: string, message: string, sha: string): Promise<void> {
     await (await this.getClient()).deleteFile(owner, repo, path, message, sha)
   }
+
+  async uploadFile(
+    owner: string,
+    repo: string,
+    path: string,
+    contentBase64: string,
+    message: string,
+    sha?: string
+  ): Promise<void> {
+    await (await this.getClient()).uploadFile(owner, repo, path, contentBase64, message, sha)
+  }
 }

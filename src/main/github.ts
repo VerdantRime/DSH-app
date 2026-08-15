@@ -137,6 +137,7 @@ export interface IGithubClient {
   getCommit(owner: string, repo: string, sha: string): Promise<CommitDetail>
   createOrUpdateFile(owner: string, repo: string, path: string, content: string, message: string, sha?: string): Promise<void>
   deleteFile(owner: string, repo: string, path: string, message: string, sha: string): Promise<void>
+  uploadFile(owner: string, repo: string, path: string, contentBase64: string, message: string, sha?: string): Promise<void>
 }
 
 export const DEFAULT_GITHUB_API = 'https://api.github.com'
@@ -270,5 +271,19 @@ export class GithubClient implements IGithubClient {
 
   async deleteFile(owner: string, repo: string, path: string, message: string, sha: string): Promise<void> {
     await this.octokit.rest.repos.deleteFile({ owner, repo, path, message, sha })
+  }
+
+  /** 上传文件：contentBase64 已编码（支持二进制），文件已存在时须传 sha 覆盖。 */
+  async uploadFile(
+    owner: string,
+    repo: string,
+    path: string,
+    contentBase64: string,
+    message: string,
+    sha?: string
+  ): Promise<void> {
+    const payload: Record<string, unknown> = { owner, repo, path, message, content: contentBase64 }
+    if (sha) payload.sha = sha
+    await this.octokit.rest.repos.createOrUpdateFileContents(payload as any)
   }
 }

@@ -50,6 +50,7 @@ export function registerIpc(deps: IpcDeps): void {
   ipcMain.handle(IPC.githubGetCommit, (_e, o, r, sha) => deps.github.getCommit(o, r, sha))
   ipcMain.handle(IPC.githubSaveFile, (_e, o, r, p, c, m, s) => deps.github.createOrUpdateFile(o, r, p, c, m, s))
   ipcMain.handle(IPC.githubDeleteFile, (_e, o, r, p, m, s) => deps.github.deleteFile(o, r, p, m, s))
+  ipcMain.handle(IPC.githubUploadFile, (_e, o, r, p, c, m, s) => deps.github.uploadFile(o, r, p, c, m, s))
   // 备份/恢复
   ipcMain.handle(IPC.backupCreate, (_e, destPath?: string) => deps.backup.create(destPath))
   ipcMain.handle(IPC.backupRestore, (_e, srcPath: string) => deps.backup.restore(srcPath))

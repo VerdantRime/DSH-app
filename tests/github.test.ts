@@ -112,6 +112,25 @@ describe('GithubClient 端点', () => {
     expect(out.map((n) => n.name)).toEqual(['Bob', 'apple', 'Zebra'])
   })
 
+  it('uploadFile 透传 base64 内容，覆盖时带 sha', async () => {
+    let captured: any = null
+    const fake = { rest: { repos: { createOrUpdateFileContents: async (args: any) => { captured = args } } } }
+    const c = new GithubClient('tok', { octokit: fake as any })
+    await c.uploadFile('o', 'r', 'img/logo.png', 'aGVsbG8=', '上传图片', 'sha1')
+    expect(captured.content).toBe('aGVsbG8=')
+    expect(captured.sha).toBe('sha1')
+    expect(captured.path).toBe('img/logo.png')
+  })
+
+  it('uploadFile 新文件不带 sha', async () => {
+    let captured: any = null
+    const fake = { rest: { repos: { createOrUpdateFileContents: async (args: any) => { captured = args } } } }
+    const c = new GithubClient('tok', { octokit: fake as any })
+    await c.uploadFile('o', 'r', 'new.bin', 'AAEC', '新增')
+    expect(captured.content).toBe('AAEC')
+    expect(captured.sha).toBeUndefined()
+  })
+
   it('deleteFile 携带 sha 与 message 调用 API', async () => {
     let captured: any = null
     const fake = { rest: { repos: { deleteFile: async (args: any) => { captured = args } } } }

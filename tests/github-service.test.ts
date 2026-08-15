@@ -26,6 +26,7 @@ function fakeClient(overrides: Partial<IGithubClient> = {}): IGithubClient {
     getCommit: async () => ({ sha: '', message: '', author: '', date: '', files: [] }),
     createOrUpdateFile: async () => {},
     deleteFile: async () => {},
+    uploadFile: async () => {},
     ...overrides
   }
 }
@@ -63,6 +64,18 @@ describe('GithubService', () => {
     await svc.setToken('tok')
     await svc.deleteFile('o', 'r', 'a.txt', '删除', 'sha')
     expect(calls).toEqual([['o', 'r', 'a.txt', '删除', 'sha']])
+  })
+
+  it('uploadFile 透传 base64 与可选 sha', async () => {
+    const calls: any[] = []
+    const creds = new CredentialsStore(join(dir, 'github.json'), cipher)
+    const svc = new GithubService(creds, () => fakeClient({
+      uploadFile: async (...args: any[]) => { calls.push(args) }
+    }))
+    await svc.setToken('tok')
+    await svc.uploadFile('o', 'r', 'a.bin', 'QUJD', '上传')
+    await svc.uploadFile('o', 'r', 'a.bin', 'QUJD', '覆盖', 'sha2')
+    expect(calls).toEqual([['o', 'r', 'a.bin', 'QUJD', '上传', undefined], ['o', 'r', 'a.bin', 'QUJD', '覆盖', 'sha2']])
   })
 
   it('clearToken 清空并复位状态', async () => {

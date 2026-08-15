@@ -267,6 +267,9 @@ async function loadFiles(): Promise<void> {
         void loadFiles()
       }))
     }
+    const tools = h('div', 'gh-bar')
+    tools.appendChild(btn('⬆ 上传文件', () => pickAndUpload()))
+    content.appendChild(tools)
     if (tree.length === 0) {
       content.appendChild(h('div', 'gh-empty', '空目录'))
       return
@@ -288,6 +291,42 @@ async function loadFiles(): Promise<void> {
     clear(content)
     content.appendChild(h('div', 'gh-error', '加载失败：' + errMsg(e)))
   }
+}
+
+function pickAndUpload(): void {
+  if (!currentRepo) return
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.addEventListener('change', () => {
+    const f = input.files?.[0]
+    if (!f) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      const dataUrl = String(reader.result ?? '')
+      const comma = dataUrl.indexOf(',')
+      const b64 = comma >= 0 ? dataUrl.slice(comma + 1) : ''
+      if (!b64) {
+        window.alert('读取文件失败，请重试')
+        return
+      }
+      const target = (filePath ? filePath + '/' : '') + f.name
+      const message = window.prompt('提交说明（commit message）', 'Upload ' + target)
+      if (message === null) return
+      void (async () => {
+        try {
+          let sha: string | undefined
+          const { file } = await window.api.githubGetContents(currentRepo!.owner, currentRepo!.repo, target)
+          if (file) sha = file.sha
+          await window.api.githubUploadFile(currentRepo!.owner, currentRepo!.repo, target, b64, message, sha)
+          void loadFiles()
+        } catch (e) {
+          window.alert('上传失败：' + errMsg(e))
+        }
+      })()
+    }
+    reader.readAsDataURL(f)
+  })
+  input.click()
 }
 
 async function loadFileContent(path: string): Promise<void> {
