@@ -10,7 +10,7 @@ import type {
 } from '../shared/types'
 import DOMPurify from 'dompurify'
 import { renderMarkdown } from './markdown'
-import { parentPath, fileNameOf, joinRepoPath, validateNewFileName } from './github-utils'
+import { parentPath, fileNameOf, joinRepoPath, validateNewFileName, breadcrumbSegments, formatFileSize } from './github-utils'
 import { GITHUB_TOKEN_URL, TOKEN_HELP_STEPS } from './github-help'
 
 type ListMode = 'mine' | 'starred' | 'search'
@@ -259,12 +259,22 @@ async function loadFiles(): Promise<void> {
       content.appendChild(h('pre', 'gh-code', file.content))
       return
     }
-    if (filePath !== '') {
-      content.appendChild(btn('↑ 上级目录', () => {
-        filePath = parentPath(filePath)
+    const bc = h('div', 'gh-breadcrumb')
+    const rootBtn = btn('根目录', () => {
+      filePath = ''
+      void loadFiles()
+    })
+    rootBtn.classList.toggle('active', filePath === '')
+    bc.appendChild(rootBtn)
+    for (const seg of breadcrumbSegments(filePath)) {
+      bc.appendChild(h('span', 'gh-crumb-sep', '›'))
+      const b = btn(seg.label, () => {
+        filePath = seg.path
         void loadFiles()
-      }))
+      })
+      bc.appendChild(b)
     }
+    content.appendChild(bc)
     const tools = h('div', 'gh-bar')
     tools.appendChild(btn('⬆ 上传文件', () => pickAndUpload()))
     tools.appendChild(btn('＋ 新建文件', () => createFile()))
@@ -274,7 +284,11 @@ async function loadFiles(): Promise<void> {
       return
     }
     for (const n of tree) {
-      const row = h('div', 'gh-file-row', (n.type === 'dir' ? '📁 ' : '📄 ') + n.name)
+      const row = h('div', 'gh-file-row')
+      row.appendChild(h('span', 'gh-file-label', (n.type === 'dir' ? '📁 ' : '📄 ') + n.name))
+      if (n.type === 'file' && n.size > 0) {
+        row.appendChild(h('span', 'gh-file-size', formatFileSize(n.size)))
+      }
       row.addEventListener('click', () => {
         if (n.type === 'dir') {
           filePath = n.path

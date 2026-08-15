@@ -103,8 +103,14 @@ body {
 .gh-row { padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; cursor: pointer; display: flex; justify-content: space-between; gap: 8px; background: var(--card-bg); }
 .gh-row:hover { background: var(--hover); }
 .gh-row-meta { font-size: 12px; color: var(--fg-muted); }
-.gh-file-row { padding: 6px 10px; cursor: pointer; border-radius: 8px; }
+.gh-file-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 10px; cursor: pointer; border-radius: 8px; }
 .gh-file-row:hover { background: var(--hover); }
+.gh-file-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gh-file-size { flex: none; color: var(--fg-muted); font-size: 12px; margin-left: 10px; }
+.gh-crumb-sep { color: var(--fg-muted); }
+.gh-breadcrumb .btn { border: none; background: transparent; box-shadow: none; padding: 2px 8px; color: var(--accent-strong); }
+.gh-breadcrumb .btn:hover { background: var(--hover); }
+.gh-breadcrumb .btn.active { background: var(--accent); color: #fff; }
 .gh-code, .gh-body { margin: 8px 0; padding: 12px 14px; background: var(--sidebar-bg); border: 1px solid var(--border); border-radius: 8px; font-family: Consolas, monospace; font-size: 12px; white-space: pre-wrap; word-break: break-all; }
 .gh-body { font-family: inherit; }
 .gh-editor { width: 100%; min-height: 240px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--card-bg); color: var(--fg); font-family: Consolas, monospace; font-size: 13px; resize: vertical; margin-bottom: 8px; }

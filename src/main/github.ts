@@ -49,7 +49,7 @@ export function mapRepoDetail(r: any): RepoDetail {
 }
 
 export function mapFileNode(e: any): FileNode {
-  return { name: e.name ?? '', path: e.path ?? '', type: e.type === 'dir' ? 'dir' : 'file' }
+  return { name: e.name ?? '', path: e.path ?? '', type: e.type === 'dir' ? 'dir' : 'file', size: e.size ?? 0 }
 }
 
 /** 文件浏览器排序：文件夹置顶、同组按名称字母序；不修改原数组。 */

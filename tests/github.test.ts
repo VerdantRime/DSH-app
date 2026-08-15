@@ -6,6 +6,12 @@ function node(name: string, type: 'file' | 'dir', path = name): any {
 }
 
 describe('github mappers', () => {
+  it('mapFileNode 映射 size', () => {
+    const n = mapFileNode({ name: 'a.png', path: 'a.png', type: 'file', size: 2048 })
+    expect(n.size).toBe(2048)
+    expect(mapFileNode({ name: 'd', path: 'd', type: 'dir' }).size).toBe(0)
+  })
+
   it('mapRepoSummary 映射字段', () => {
     const r = mapRepoSummary({
       id: 9, name: 'x', full_name: 'a/x', owner: { login: 'a' }, description: null,
