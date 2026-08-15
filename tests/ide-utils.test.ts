@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { languageForFile, tabTitleFromPath, githubTabKey, canApplyAi } from '../src/renderer/ide-utils'
+import { languageForFile, tabTitleFromPath, githubTabKey, canApplyAi, clamp } from '../src/renderer/ide-utils'
 
 describe('IDE 语言识别', () => {
   it('按扩展名识别语言', () => {
@@ -20,6 +20,12 @@ describe('IDE 语言识别', () => {
   it('大小写不敏感', () => {
     expect(languageForFile('MAIN.PY')).toBe('python')
     expect(languageForFile('A.CPP')).toBe('cpp')
+  })
+
+  it('clamp 限制数值范围', () => {
+    expect(clamp(5, 0, 10)).toBe(5)
+    expect(clamp(-5, 0, 10)).toBe(0)
+    expect(clamp(50, 0, 10)).toBe(10)
   })
 
   it('canApplyAi 仅找错/优化且含代码块可应用', () => {

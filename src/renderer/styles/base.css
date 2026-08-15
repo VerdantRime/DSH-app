@@ -91,7 +91,7 @@ body {
 .ide-bottom { flex: none; border-top: 1px solid var(--border); }
 .ide-bottom.hidden { display: none; }
 .ide-panel-head { padding: 6px 12px; font-size: 12px; font-weight: 700; color: var(--accent-strong); background: var(--sidebar-bg); border-bottom: 1px solid var(--border); }
-.ide-ai-body { padding: 10px 14px; max-height: 340px; overflow: auto; margin-top: 0; border-top: none; }
+.ide-ai-body { padding: 10px 14px; flex: 1 1 auto; min-height: 0; overflow: auto; margin-top: 0; border-top: none; }
 .ide-ai-body.hidden { display: none; }
 .ide-commit-list { max-height: 200px; overflow: auto; margin-bottom: 8px; }
 .ide-commit-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; font-size: 13px; cursor: pointer; }
@@ -102,6 +102,14 @@ body {
 .ide-status { font-size: 12px; color: var(--fg-muted); }
 .ide-proj-label { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--fg-muted); cursor: pointer; user-select: none; }
 .ide-main { flex: 1; min-height: 0; display: flex; }
+.ide-splitter { flex: none; background: transparent; z-index: 5; }
+.ide-splitter.v { width: 5px; cursor: col-resize; }
+.ide-splitter.v:hover, .ide-splitter.v:active { background: var(--accent); }
+.ide-splitter.h { height: 5px; cursor: row-resize; }
+.ide-splitter.h:hover, .ide-splitter.h:active { background: var(--accent); }
+body.ide-resizing { user-select: none; cursor: col-resize; }
+.ide-bottom { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+.ide-run-output { flex: 1 1 auto; min-height: 0; max-height: none; }
 .ide-tree { width: 200px; flex: none; border-right: 1px solid var(--border); background: var(--sidebar-bg); display: flex; flex-direction: column; min-height: 0; overflow: auto; }
 .ide-tree.hidden { display: none; }
 .ide-tree-head { padding: 8px 12px; font-size: 12px; font-weight: 700; color: var(--accent-strong); border-bottom: 1px solid var(--border); }

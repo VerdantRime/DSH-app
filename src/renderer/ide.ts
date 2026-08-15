@@ -1,5 +1,5 @@
 import monaco from './monaco-setup'
-import { languageForFile, tabTitleFromPath, isInteractiveSource, usesConsoleApis, defaultRunFileName, extractCodeBlock, githubTabKey, buildChatPrompt, canApplyAi, type ChatTurn, type IdeLanguage } from './ide-utils'
+import { languageForFile, tabTitleFromPath, isInteractiveSource, usesConsoleApis, defaultRunFileName, extractCodeBlock, githubTabKey, buildChatPrompt, canApplyAi, clamp, type ChatTurn, type IdeLanguage } from './ide-utils'
 import { diffLines } from 'diff'
 import { githubErrorHint } from './github-utils'
 import { showContextMenu, copyText, type CtxMenuItem } from './context-menu'
@@ -36,6 +36,10 @@ let activeId = 0
 let nextTabId = 1
 let treeRoot: string | null = null
 let treeDir = ''
+let treeWidth = 200
+let aiWidth = 320
+let outputHeight = 160
+let bottomRef: HTMLElement | null = null
 let lastAiCode: string | null = null
 let lastAiRange: monaco.Range | null = null
 let aiHistory: ChatTurn[] = []
@@ -667,6 +671,34 @@ function registerContextActions(): void {
   editor.addAction({ id: 'dsh-reveal-file', label: '在文件树中定位', contextMenuGroupId: 'dsh', contextMenuOrder: 4, run: () => revealInTree() })
 }
 
+function saveLayout(): void {
+  window.api.configSet({ ide: { layout: { treeWidth, aiWidth, outputHeight } } }).catch(() => {})
+}
+
+function makeSplitter(vertical: boolean, onDrag: (delta: number) => void, onEnd: () => void): HTMLElement {
+  const el = h('div', 'ide-splitter ' + (vertical ? 'v' : 'h'))
+  let start = 0
+  el.addEventListener('mousedown', (e) => {
+    e.preventDefault()
+    start = vertical ? e.clientX : e.clientY
+    document.body.classList.add('ide-resizing')
+    const move = (ev: MouseEvent): void => {
+      const delta = (vertical ? ev.clientX : ev.clientY) - start
+      start = vertical ? ev.clientX : ev.clientY
+      onDrag(delta)
+    }
+    const up = (): void => {
+      document.removeEventListener('mousemove', move)
+      document.removeEventListener('mouseup', up)
+      document.body.classList.remove('ide-resizing')
+      onEnd()
+    }
+    document.addEventListener('mousemove', move)
+    document.addEventListener('mouseup', up)
+  })
+  return el
+}
+
 function buildDom(): void {
   if (!panel) return
   panel.replaceChildren()
@@ -715,6 +747,7 @@ function buildDom(): void {
   const main = h('div', 'ide-main')
   const tree = h('aside', 'ide-tree hidden')
   tree.id = 'ide-tree'
+  tree.style.width = treeWidth + 'px'
   tree.appendChild(h('div', 'ide-tree-head', '文件'))
   const rootLabel = h('div', 'ide-tree-root', '')
   rootLabel.id = 'ide-tree-root'
@@ -723,6 +756,7 @@ function buildDom(): void {
   list.id = 'ide-tree-list'
   tree.appendChild(list)
   main.appendChild(tree)
+  main.appendChild(makeSplitter(true, (d) => { treeWidth = clamp(treeWidth + d, 120, 520); tree.style.width = treeWidth + 'px' }, saveLayout))
   const wrap = h('div', 'ide-editor-wrap')
   const tabsBar = h('div', 'ide-tabs')
   tabsBar.id = 'ide-tabs'
@@ -734,6 +768,7 @@ function buildDom(): void {
   // 右侧 AI 面板
   const aiPanel = h('aside', 'ide-ai-panel')
   aiPanel.id = 'ide-ai-panel'
+  aiPanel.style.width = aiWidth + 'px'
   const aiHead = h('div', 'ide-ai-head')
   aiHead.appendChild(h('span', 'ide-ai-title', 'AI 助手'))
   const modelSel = document.createElement('select')
@@ -777,11 +812,15 @@ function buildDom(): void {
   inputRow.appendChild(chatInput)
   inputRow.appendChild(sendBtn)
   aiPanel.appendChild(inputRow)
+  main.appendChild(makeSplitter(true, (d) => { aiWidth = clamp(aiWidth - d, 200, 640); aiPanel.style.width = aiWidth + 'px' }, saveLayout))
   main.appendChild(aiPanel)
   panel.appendChild(main)
 
+  panel.appendChild(makeSplitter(false, (d) => { outputHeight = clamp(outputHeight - d, 80, 520); if (bottomRef) bottomRef.style.height = outputHeight + 'px' }, saveLayout))
   const bottom = h('div', 'ide-bottom hidden')
   bottom.id = 'ide-bottom'
+  bottom.style.height = outputHeight + 'px'
+  bottomRef = bottom
   const head = h('div', 'ide-panel-head', '输出')
   head.id = 'ide-bottom-head'
   bottom.appendChild(head)
@@ -800,9 +839,15 @@ function buildDom(): void {
   panel.appendChild(bottom)
 }
 
-export function initIde(): void {
+export async function initIde(): Promise<void> {
   panel = document.getElementById('panel-ide')
   if (!panel) return
+  try {
+    const cfg = await window.api.configGet()
+    treeWidth = cfg.ide?.layout?.treeWidth ?? 200
+    aiWidth = cfg.ide?.layout?.aiWidth ?? 320
+    outputHeight = cfg.ide?.layout?.outputHeight ?? 160
+  } catch { /* 用默认值 */ }
   buildDom()
   editor = monaco.editor.create(document.getElementById('ide-editor') as HTMLElement, {
     value: '', language: 'plaintext', theme: editorTheme(), automaticLayout: true,

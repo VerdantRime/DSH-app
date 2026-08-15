@@ -28,6 +28,11 @@ export interface AppConfig {
     pythonPath: string
     gccPath: string
     javaPath: string
+    layout: {
+      treeWidth: number
+      aiWidth: number
+      outputHeight: number
+    }
   }
   windowBounds: WindowBounds
 }
