@@ -1,6 +1,7 @@
 import { PANELS, DEFAULT_PANEL, isPanelId, type PanelId } from './panels'
 import { initChat, setChatVisible } from './chat'
 import { initGithub } from './github'
+import { initIde } from './ide'
 import { initSettings } from './settings'
 
 let current: PanelId = DEFAULT_PANEL
@@ -65,6 +66,7 @@ async function init(): Promise<void> {
     if (isPanelId(panelId)) select(panelId)
   })
   initChat()
+  initIde()
   initGithub()
   initSettings()
   select(DEFAULT_PANEL)

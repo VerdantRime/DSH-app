@@ -2,9 +2,10 @@ import { describe, it, expect } from 'vitest'
 import { PANELS, DEFAULT_PANEL, isPanelId, panelVisibility } from '../src/renderer/panels'
 
 describe('panels', () => {
-  it('有三个面板且聊天为默认', () => {
-    expect(PANELS).toHaveLength(3)
+  it('有四个面板且聊天为默认', () => {
+    expect(PANELS).toHaveLength(4)
     expect(PANELS[0].id).toBe('chat')
+    expect(PANELS[1].id).toBe('ide')
     expect(DEFAULT_PANEL).toBe('chat')
   })
 
@@ -16,6 +17,7 @@ describe('panels', () => {
   it('isPanelId 正确判断', () => {
     expect(isPanelId('chat')).toBe(true)
     expect(isPanelId('github')).toBe(true)
+    expect(isPanelId('ide')).toBe(true)
     expect(isPanelId('settings')).toBe(true)
     expect(isPanelId('nope')).toBe(false)
   })
@@ -27,5 +29,7 @@ describe('panels', () => {
     expect(panelVisibility('github').github).toBe(true)
     expect(panelVisibility('settings').webviewVisible).toBe(false)
     expect(panelVisibility('settings').settings).toBe(true)
+    expect(panelVisibility('ide').ide).toBe(true)
+    expect(panelVisibility('ide').webviewVisible).toBe(false)
   })
 })
