@@ -53,6 +53,14 @@ export function registerIpc(deps: IpcDeps): void {
   ipcMain.handle(IPC.githubUploadFile, (_e, o, r, p, c, m, s) => deps.github.uploadFile(o, r, p, c, m, s))
   ipcMain.handle(IPC.githubDownloadFile, (_e, o, r, p, d) => deps.github.downloadFile(o, r, p, d))
   ipcMain.handle(IPC.githubGetReadme, (_e, o, r) => deps.github.getReadme(o, r))
+  ipcMain.handle(IPC.githubListTree, (_e, o, r, d) => deps.github.listTreeFiles(o, r, d))
+  ipcMain.handle(IPC.githubDownloadFiles, (_e, o, r, p, d) => deps.github.downloadFiles(o, r, p, d))
+  ipcMain.handle(IPC.githubPickSaveDir, async () => {
+    const win = deps.getWindow()
+    const opts: Electron.OpenDialogOptions = { properties: ['openDirectory', 'createDirectory'] }
+    const res = win ? await dialog.showOpenDialog(win, opts) : await dialog.showOpenDialog(opts)
+    return res.canceled ? null : res.filePaths?.[0] ?? null
+  })
   ipcMain.handle(IPC.githubPickSavePath, async (_e, defaultName: string) => {
     const win = deps.getWindow()
     const opts = { defaultPath: defaultName }

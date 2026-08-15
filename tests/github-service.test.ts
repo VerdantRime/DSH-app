@@ -29,6 +29,7 @@ function fakeClient(overrides: Partial<IGithubClient> = {}): IGithubClient {
     uploadFile: async () => {},
     getRawFile: async () => Buffer.from('x'),
     getReadme: async () => null,
+    listTreeFiles: async () => [],
     ...overrides
   }
 }
@@ -90,6 +91,28 @@ describe('GithubService', () => {
     await svc.downloadFile('o', 'r', 'a.bin', dest)
     const buf = await fs.readFile(dest)
     expect([...buf]).toEqual([1, 2, 3, 250])
+  })
+
+  it('downloadFiles 批量写入并跳过失败项', async () => {
+    const creds = new CredentialsStore(join(dir, 'github.json'), cipher)
+    const svc = new GithubService(creds, () => fakeClient({
+      getRawFile: async (_o: any, _r: any, p: string) => {
+        if (p === 'big.bin') throw new Error('too large')
+        return Buffer.from(p, 'utf-8')
+      }
+    }))
+    await svc.setToken('tok')
+    const res = await svc.downloadFiles('o', 'r', ['a.txt', 'docs/b.txt', 'big.bin'], join(dir, 'dl'))
+    expect(res.saved).toBe(2)
+    expect(res.skipped).toBe(1)
+    expect((await fs.readFile(join(dir, 'dl', 'docs', 'b.txt'))).toString()).toBe('docs/b.txt')
+  })
+
+  it('downloadFiles 超过 300 个抛错', async () => {
+    const creds = new CredentialsStore(join(dir, 'github.json'), cipher)
+    const svc = new GithubService(creds, () => fakeClient())
+    await svc.setToken('tok')
+    await expect(svc.downloadFiles('o', 'r', new Array(301).fill('a.txt'), join(dir, 'dl'))).rejects.toThrow('300')
   })
 
   it('clearToken 清空并复位状态', async () => {

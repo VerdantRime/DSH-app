@@ -1,4 +1,5 @@
 import { promises as fs } from 'fs'
+import { dirname, join } from 'path'
 import type { CredentialsStore } from './credentials'
 import { GithubClient, type IGithubClient } from './github'
 import type {
@@ -134,5 +135,39 @@ export class GithubService {
 
   async getReadme(owner: string, repo: string): Promise<import('../shared/types').ReadmeContent | null> {
     return (await this.getClient()).getReadme(owner, repo)
+  }
+
+  async listTreeFiles(owner: string, repo: string, dirPath?: string): Promise<string[]> {
+    return (await this.getClient()).listTreeFiles(owner, repo, dirPath)
+  }
+
+  async downloadFiles(
+    owner: string,
+    repo: string,
+    paths: string[],
+    destDir: string
+  ): Promise<{ saved: number; skipped: number }> {
+    if (paths.length === 0) return { saved: 0, skipped: 0 }
+    if (paths.length > 300) throw new Error('一次最多下载 300 个文件，请分批选择')
+    const client = await this.getClient()
+    let saved = 0
+    let skipped = 0
+    for (const p of paths) {
+      const parts = p.split('/')
+      if (!p || parts.includes('..') || p.includes('\\')) {
+        skipped++
+        continue
+      }
+      try {
+        const buf = await client.getRawFile(owner, repo, p)
+        const dest = join(destDir, p)
+        await fs.mkdir(dirname(dest), { recursive: true })
+        await fs.writeFile(dest, buf)
+        saved++
+      } catch {
+        skipped++
+      }
+    }
+    return { saved, skipped }
   }
 }

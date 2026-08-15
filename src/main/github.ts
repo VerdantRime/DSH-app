@@ -142,6 +142,7 @@ export interface IGithubClient {
   uploadFile(owner: string, repo: string, path: string, contentBase64: string, message: string, sha?: string): Promise<void>
   getRawFile(owner: string, repo: string, path: string): Promise<Buffer>
   getReadme(owner: string, repo: string): Promise<ReadmeContent | null>
+  listTreeFiles(owner: string, repo: string, dirPath?: string): Promise<string[]>
 }
 
 export const DEFAULT_GITHUB_API = 'https://api.github.com'
@@ -297,6 +298,16 @@ export class GithubClient implements IGithubClient {
       if (e?.status === 404) return null
       throw e
     }
+  }
+
+  /** 列出仓库（或某目录下）所有文件路径，用于多文件/整目录下载。 */
+  async listTreeFiles(owner: string, repo: string, dirPath = ''): Promise<string[]> {
+    const res = await this.octokit.rest.git.getTree({ owner, repo, tree_sha: 'HEAD', recursive: true })
+    const data = res.data as any
+    const items = Array.isArray(data?.tree) ? data.tree : []
+    return items
+      .filter((t: any) => t.type === 'blob' && (dirPath === '' || t.path === dirPath || t.path.startsWith(dirPath + '/')))
+      .map((t: any) => t.path)
   }
 
   async deleteFile(owner: string, repo: string, path: string, message: string, sha: string): Promise<void> {

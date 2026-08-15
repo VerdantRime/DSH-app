@@ -12,6 +12,17 @@ describe('github mappers', () => {
     expect(mapRepoDetail({ id: 1, name: 'x', full_name: 'a/x', owner: { login: 'a' }, permissions: { push: false } }).canPush).toBe(false)
   })
 
+  it('listTreeFiles 只返回目录下的 blob 文件', async () => {
+    const fake = { rest: { git: { getTree: async () => ({ data: { tree: [
+      { path: 'docs/a.md', type: 'blob' },
+      { path: 'docs/b.md', type: 'blob' },
+      { path: 'src/c.ts', type: 'blob' },
+      { path: 'docs/sub', type: 'tree' }
+    ] } }) } } }
+    const c = new GithubClient('tok', { octokit: fake as any })
+    expect(await c.listTreeFiles('o', 'r', 'docs')).toEqual(['docs/a.md', 'docs/b.md'])
+  })
+
   it('mapFileNode 映射 size', () => {
     const n = mapFileNode({ name: 'a.png', path: 'a.png', type: 'file', size: 2048 })
     expect(n.size).toBe(2048)

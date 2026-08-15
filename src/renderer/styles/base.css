@@ -167,6 +167,7 @@ body {
   cursor: pointer; border-radius: var(--radius-md);
 }
 .gh-file-row:hover { background: var(--hover); }
+.gh-file-check { flex: none; width: 14px; height: 14px; margin: 0; accent-color: var(--brand-blue); cursor: pointer; }
 .gh-file-icon { width: 16px; height: 16px; flex: none; display: inline-flex; color: var(--brand-sky); }
 .gh-file-icon svg { width: 16px; height: 16px; display: block; }
 .gh-file-row:hover .gh-file-icon { color: var(--brand-blue); }

@@ -51,6 +51,10 @@ export function breadcrumbSegments(path: string): { label: string; path: string 
 }
 
 /** 判断文件是否为 Markdown（.md/.markdown/.mdown/.mkd）。 */
+export function isSafeRepoPath(p: string): boolean {
+  return typeof p === 'string' && p.length > 0 && !p.includes('\\') && !p.split('/').includes('..')
+}
+
 export function isMarkdownFile(name: string): boolean {
   return /\.(md|markdown|mdown|mkd)$/i.test(name)
 }

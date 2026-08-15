@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parentPath, fileNameOf, joinRepoPath, validateNewFileName, breadcrumbSegments, formatFileSize, isMarkdownFile, githubErrorHint } from '../src/renderer/github-utils'
+import { parentPath, fileNameOf, joinRepoPath, validateNewFileName, breadcrumbSegments, formatFileSize, isMarkdownFile, githubErrorHint, isSafeRepoPath } from '../src/renderer/github-utils'
 
 describe('github-utils 路径工具', () => {
   it('parentPath 返回上级目录', () => {
@@ -26,6 +26,14 @@ describe('github-utils 路径工具', () => {
       { label: 'a', path: 'docs/a' },
       { label: 'b', path: 'docs/a/b' }
     ])
+  })
+
+  it('isSafeRepoPath 拒绝越界与反斜杠路径', () => {
+    expect(isSafeRepoPath('a/b.md')).toBe(true)
+    expect(isSafeRepoPath('../x')).toBe(false)
+    expect(isSafeRepoPath('a/../x')).toBe(false)
+    expect(isSafeRepoPath('a\\b')).toBe(false)
+    expect(isSafeRepoPath('')).toBe(false)
   })
 
   it('githubErrorHint 转成中文可读提示', () => {

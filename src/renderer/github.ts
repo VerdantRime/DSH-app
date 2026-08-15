@@ -11,7 +11,7 @@ import type {
 import { FOLDER_ICON, FILE_ICON, GITHUB_ICON } from './icons'
 import DOMPurify from 'dompurify'
 import { renderMarkdown } from './markdown'
-import { parentPath, fileNameOf, joinRepoPath, validateNewFileName, breadcrumbSegments, formatFileSize, isMarkdownFile, githubErrorHint } from './github-utils'
+import { parentPath, fileNameOf, joinRepoPath, validateNewFileName, breadcrumbSegments, formatFileSize, isMarkdownFile, githubErrorHint, isSafeRepoPath } from './github-utils'
 import { GITHUB_TOKEN_URL, TOKEN_HELP_STEPS } from './github-help'
 
 type ListMode = 'mine' | 'starred' | 'search'
@@ -30,6 +30,8 @@ let pullState: 'open' | 'closed' = 'open'
 let currentFileSha = ''
 let currentFileContent = ''
 let canPush = false
+const selectedFiles = new Set<string>()
+const selectedDirs = new Set<string>()
 
 function h(tag: string, className?: string, text?: string): HTMLElement {
   const e = document.createElement(tag)
@@ -186,6 +188,8 @@ function openRepo(owner: string, repo: string): void {
   currentTab = 'files'
   filePath = ''
   canPush = false
+  selectedFiles.clear()
+  selectedDirs.clear()
   void renderRepo()
 }
 
@@ -293,6 +297,11 @@ async function loadFiles(): Promise<void> {
     } else {
       tools.appendChild(h('span', 'gh-note-readonly', '只读仓库（无写入权限），仅可浏览/下载'))
     }
+    const dlBtn = btn('下载所选', () => void downloadSelected())
+    dlBtn.id = 'gh-dl-selected'
+    tools.appendChild(dlBtn)
+    tools.appendChild(btn('全选', () => toggleAll()))
+    updateDownloadBtn()
     content.appendChild(tools)
     if (tree.length === 0) {
       content.appendChild(h('div', 'gh-empty', '空目录'))
@@ -300,6 +309,22 @@ async function loadFiles(): Promise<void> {
     }
     for (const n of tree) {
       const row = h('div', 'gh-file-row')
+      const cb = document.createElement('input')
+      cb.type = 'checkbox'
+      cb.className = 'gh-file-check'
+      cb.checked = n.type === 'dir' ? selectedDirs.has(n.path) : selectedFiles.has(n.path)
+      cb.addEventListener('change', () => {
+        if (cb.checked) {
+          if (n.type === 'dir') selectedDirs.add(n.path)
+          else selectedFiles.add(n.path)
+        } else {
+          selectedDirs.delete(n.path)
+          selectedFiles.delete(n.path)
+        }
+        updateDownloadBtn()
+      })
+      cb.addEventListener('click', (e) => e.stopPropagation())
+      row.appendChild(cb)
       const ficon = document.createElement('span')
       ficon.className = 'gh-file-icon'
       ficon.innerHTML = n.type === 'dir' ? FOLDER_ICON : FILE_ICON
@@ -322,6 +347,47 @@ async function loadFiles(): Promise<void> {
   } catch (e) {
     clear(content)
     content.appendChild(h('div', 'gh-error', '加载失败：' + errMsg(e)))
+  }
+}
+
+function updateDownloadBtn(): void {
+  const b = document.getElementById('gh-dl-selected') as HTMLButtonElement | null
+  if (b) b.disabled = selectedFiles.size === 0 && selectedDirs.size === 0
+}
+
+function toggleAll(): void {
+  const boxes = Array.from(document.querySelectorAll<HTMLInputElement>('.gh-file-check'))
+  const allChecked = boxes.length > 0 && boxes.every((b) => b.checked)
+  for (const b of boxes) {
+    b.checked = !allChecked
+    b.dispatchEvent(new Event('change'))
+  }
+}
+
+async function downloadSelected(): Promise<void> {
+  if (!currentRepo) return
+  const files = [...selectedFiles].filter(isSafeRepoPath)
+  const dirs = [...selectedDirs].filter(isSafeRepoPath)
+  if (files.length === 0 && dirs.length === 0) return
+  try {
+    for (const d of dirs) {
+      const more = await window.api.githubListTree(currentRepo.owner, currentRepo.repo, d)
+      files.push(...more)
+    }
+    const uniq = [...new Set(files)]
+    if (uniq.length === 0) {
+      window.alert('所选内容没有可下载的文件')
+      return
+    }
+    const dest = await window.api.githubPickSaveDir()
+    if (!dest) return
+    const res = await window.api.githubDownloadFiles(currentRepo.owner, currentRepo.repo, uniq, dest)
+    window.alert('已下载 ' + res.saved + ' 个文件' + (res.skipped ? '（跳过 ' + res.skipped + ' 个，可能超过 1MB）' : '') + '\n保存到：' + dest)
+    selectedFiles.clear()
+    selectedDirs.clear()
+    void loadFiles()
+  } catch (e) {
+    window.alert('下载失败：' + errMsg(e))
   }
 }
 

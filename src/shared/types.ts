@@ -168,6 +168,9 @@ export const IPC = {
   githubDownloadFile: 'github:downloadFile',
   githubPickSavePath: 'github:pickSavePath',
   githubGetReadme: 'github:getReadme',
+  githubListTree: 'github:listTree',
+  githubDownloadFiles: 'github:downloadFiles',
+  githubPickSaveDir: 'github:pickSaveDir',
   githubListIssues: 'github:listIssues',
   githubGetIssue: 'github:getIssue',
   githubListPulls: 'github:listPulls',
@@ -210,6 +213,9 @@ export interface WorkdeskApi {
   githubDownloadFile(owner: string, repo: string, path: string, destPath: string): Promise<void>
   githubPickSavePath(defaultName: string): Promise<string | null>
   githubGetReadme(owner: string, repo: string): Promise<ReadmeContent | null>
+  githubListTree(owner: string, repo: string, dirPath?: string): Promise<string[]>
+  githubDownloadFiles(owner: string, repo: string, paths: string[], destDir: string): Promise<{ saved: number; skipped: number }>
+  githubPickSaveDir(): Promise<string | null>
   githubListIssues(owner: string, repo: string, state: 'open' | 'closed'): Promise<IssueSummary[]>
   githubGetIssue(owner: string, repo: string, number: number): Promise<IssueDetail>
   githubListPulls(owner: string, repo: string, state: 'open' | 'closed'): Promise<PullSummary[]>
