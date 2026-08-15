@@ -1,5 +1,8 @@
 import { promises as fs } from 'fs'
 import { join, dirname } from 'path'
+import * as iconv from 'iconv-lite'
+
+export type FileEncoding = 'utf-8' | 'gbk'
 
 export interface DirEntry { name: string; path: string; type: 'file' | 'dir' }
 
@@ -37,12 +40,26 @@ export async function readTextFile(path: string): Promise<string> {
   return decodeText(await fs.readFile(path))
 }
 
-/** 读取并带路径返回（前端契约）。 */
-export async function readFileWithPath(path: string): Promise<{ path: string; content: string }> {
-  return { path, content: await readTextFile(path) }
+/** 检测文件编码（UTF-8 严格解码成功为 utf-8，否则 gbk）。 */
+export function detectEncoding(buf: Buffer): FileEncoding {
+  if (!buf || buf.length === 0) return 'utf-8'
+  try {
+    new TextDecoder('utf-8', { fatal: true }).decode(buf)
+    return 'utf-8'
+  } catch {
+    return 'gbk'
+  }
 }
 
-export async function writeTextFile(path: string, content: string): Promise<void> {
+/** 读取并带路径/编码返回（前端契约）。 */
+export async function readFileWithPath(path: string): Promise<{ path: string; content: string; encoding: FileEncoding }> {
+  const buf = await fs.readFile(path)
+  return { path, content: decodeText(buf), encoding: detectEncoding(buf) }
+}
+
+/** 写入文本，可指定编码（保持原文件编码，避免 GBK 文件被存成 UTF-8 而乱码）。 */
+export async function writeTextFile(path: string, content: string, encoding: FileEncoding = 'utf-8'): Promise<void> {
   await fs.mkdir(dirname(path), { recursive: true })
-  await fs.writeFile(path, content, 'utf-8')
+  const buf = encoding === 'gbk' ? iconv.encode(content, 'gbk') : Buffer.from(content, 'utf-8')
+  await fs.writeFile(path, buf)
 }

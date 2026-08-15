@@ -56,7 +56,7 @@ export function registerIpc(deps: IpcDeps): void {
   })
   ipcMain.handle(IPC.ideReadFile, (_e, p: string) => readFileWithPath(p))
   ipcMain.handle(IPC.ideListDir, (_e, p: string) => listDirEntries(p))
-  ipcMain.handle(IPC.ideWriteFile, (_e, p: string, c: string) => writeTextFile(p, c))
+  ipcMain.handle(IPC.ideWriteFile, (_e, p: string, c: string, enc?: 'utf-8' | 'gbk') => writeTextFile(p, c, enc))
   ipcMain.handle(IPC.ideDetectTools, () => detectToolchains())
   ipcMain.handle(IPC.ideRun, (_e, req: IdeRunRequest) => {
     const ide = deps.store.get().ide

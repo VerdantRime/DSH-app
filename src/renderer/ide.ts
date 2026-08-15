@@ -25,7 +25,7 @@ const LANG_LABELS: { id: IdeLanguage; label: string }[] = [
   { id: 'markdown', label: 'Markdown' }
 ]
 
-interface Tab { id: number; title: string; path: string | null; model: monaco.editor.ITextModel; github?: { owner: string; repo: string; path: string; sha?: string; canPush: boolean } }
+interface Tab { id: number; title: string; path: string | null; model: monaco.editor.ITextModel; encoding?: 'utf-8' | 'gbk'; github?: { owner: string; repo: string; path: string; sha?: string; canPush: boolean } }
 
 let panel: HTMLElement | null = null
 let editor: monaco.editor.IStandaloneCodeEditor | null = null
@@ -267,8 +267,9 @@ async function openFileInTab(path: string): Promise<void> {
   const existing = tabs.find((t) => t.path === path)
   if (existing) { switchTab(existing.id); return }
   try {
-    const { content } = await window.api.ideReadFile(path)
+    const { content, encoding } = await window.api.ideReadFile(path)
     const tab = newTab(tabTitleFromPath(path), path, content, languageForFile(path))
+    tab.encoding = encoding
     switchTab(tab.id)
   } catch (e) { window.alert('无法打开文件：' + (e instanceof Error ? e.message : String(e))) }
 }
@@ -288,7 +289,7 @@ async function saveActive(): Promise<void> {
     renderTabs()
   }
   try {
-    await window.api.ideWriteFile(path, content)
+    await window.api.ideWriteFile(path, content, tab.encoding ?? 'utf-8')
     flashStatus('已保存：' + path)
   } catch (e) { window.alert('保存失败：' + (e instanceof Error ? e.message : String(e))) }
 }
@@ -473,10 +474,10 @@ async function runActive(): Promise<void> {
     if (!targetPath) {
       targetPath = await window.api.ideRunTemp(defaultRunFileName(lang))
     }
-    await window.api.ideWriteFile(targetPath, content)
+    await window.api.ideWriteFile(targetPath, content, tab.encoding ?? 'utf-8')
     showOutput('运行中…')
     const res: IdeRunResult = await window.api.ideRun({ language: lang, targetPath, interactive })
-    if (res.interactive) showOutput('已在新控制台窗口中运行（交互式程序）')
+    if (res.interactive) showOutput('已在新控制台窗口运行（交互式程序，请在控制台输入数据后回车；若程序没有提示语，直接输入即可）')
     else showOutput((res.output || '(无输出)') + (res.exitCode !== null ? '\n[退出码 ' + res.exitCode + ']' : ''))
   } catch (e) {
     showOutput('运行失败：' + (e instanceof Error ? e.message : String(e)))

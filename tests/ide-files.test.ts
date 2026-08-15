@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { promises as fs } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
-import { sortDirEntries, listDirEntries, readTextFile, readFileWithPath, writeTextFile, decodeText, type DirEntry } from '../src/main/ide-files'
+import { sortDirEntries, listDirEntries, readTextFile, readFileWithPath, writeTextFile, decodeText, detectEncoding, type DirEntry } from '../src/main/ide-files'
 
 describe('IDE 文件服务', () => {
   it('sortDirEntries 文件夹置顶且不修改原数组', () => {
@@ -32,11 +32,27 @@ describe('IDE 文件服务', () => {
     expect(decodeText(Buffer.alloc(0))).toBe('')
   })
 
-  it('readFileWithPath 返回 {path, content}', async () => {
+  it('detectEncoding 识别 GBK 与 UTF-8', () => {
+    expect(detectEncoding(Buffer.from('你好', 'utf-8'))).toBe('utf-8')
+    expect(detectEncoding(Buffer.from([0xc4, 0xe3]))).toBe('gbk')
+  })
+
+  it('readFileWithPath 返回 {path, content, encoding}', async () => {
     const dir = await fs.mkdtemp(join(tmpdir(), 'ide-rp-'))
     const f = join(dir, 'a.txt')
     await writeTextFile(f, '你好')
-    expect(await readFileWithPath(f)).toEqual({ path: f, content: '你好' })
+    expect(await readFileWithPath(f)).toEqual({ path: f, content: '你好', encoding: 'utf-8' })
+    await fs.rm(dir, { recursive: true, force: true })
+  })
+
+  it('writeTextFile 以 GBK 保存后读回不乱码（编码保持）', async () => {
+    const dir = await fs.mkdtemp(join(tmpdir(), 'ide-gbk-'))
+    const f = join(dir, 'a.txt')
+    await writeTextFile(f, '打印三角形', 'gbk')
+    // 按 GBK 读回应是正确中文
+    const buf = await fs.readFile(f)
+    expect(decodeText(buf)).toBe('打印三角形')
+    expect(detectEncoding(buf)).toBe('gbk')
     await fs.rm(dir, { recursive: true, force: true })
   })
 

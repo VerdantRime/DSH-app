@@ -256,9 +256,9 @@ export interface WorkdeskApi {
   ideOpenFiles(): Promise<string[]>
   ideOpenFolder(): Promise<string | null>
   ideSaveFileDialog(defaultName: string): Promise<string | null>
-  ideReadFile(path: string): Promise<{ path: string; content: string }>
+  ideReadFile(path: string): Promise<{ path: string; content: string; encoding: 'utf-8' | 'gbk' }>
   ideListDir(path: string): Promise<{ name: string; path: string; type: 'file' | 'dir' }[]>
-  ideWriteFile(path: string, content: string): Promise<void>
+  ideWriteFile(path: string, content: string, encoding?: 'utf-8' | 'gbk'): Promise<void>
   ideDetectTools(): Promise<ToolchainReport>
   ideRun(req: IdeRunRequest): Promise<IdeRunResult>
   ideRunTemp(fileName: string): Promise<string>
