@@ -203,6 +203,7 @@ export const IPC = {
   ideDetectTools: 'ide:detectTools',
   ideRun: 'ide:run',
   ideRunTemp: 'ide:runTemp',
+  aiAsk: 'ai:ask',
   appQuitReal: 'app:quitReal',
   appShowWindow: 'app:showWindow',
   appNavigate: 'app:navigate',
@@ -256,6 +257,7 @@ export interface WorkdeskApi {
   ideDetectTools(): Promise<ToolchainReport>
   ideRun(req: IdeRunRequest): Promise<IdeRunResult>
   ideRunTemp(fileName: string): Promise<string>
+  aiAsk(req: { action: 'explain' | 'debug' | 'optimize'; codePath: string; language: string }): Promise<{ text: string }>
   quitReal(): Promise<void>
   showWindow(): Promise<void>
   onNavigate(cb: (panelId: string) => void): () => void

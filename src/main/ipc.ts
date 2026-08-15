@@ -7,6 +7,7 @@ import { run } from './runner'
 import { tmpdir } from 'os'
 import { join } from 'path'
 import type { IdeRunRequest } from '../shared/types'
+import { askHeadless, buildAiTask } from './ai'
 import type { ConfigStore } from './store'
 import type { HarnessManager } from './harness-manager'
 import type { GithubService } from './github-service'
@@ -69,6 +70,12 @@ export function registerIpc(deps: IpcDeps): void {
     })
   })
   ipcMain.handle(IPC.ideRunTemp, (_e, fileName: string) => join(tmpdir(), 'dsh-ide', fileName))
+  ipcMain.handle(IPC.aiAsk, async (_e, req: { action: 'explain' | 'debug' | 'optimize'; codePath: string; language: string }) => {
+    const task = buildAiTask(req.action, req.codePath, req.language)
+    const dshHome = deps.store.get().harness.dataDir
+    const text = await askHeadless(task, { dshHome })
+    return { text }
+  })
   ipcMain.handle(IPC.appShowWindow, () => deps.getWindow()?.show())
   ipcMain.handle(IPC.appQuitReal, () => deps.quit())
   // harness

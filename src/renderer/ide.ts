@@ -1,5 +1,7 @@
 import monaco from './monaco-setup'
-import { languageForFile, tabTitleFromPath, isInteractiveSource, defaultRunFileName, type IdeLanguage } from './ide-utils'
+import { languageForFile, tabTitleFromPath, isInteractiveSource, defaultRunFileName, extractCodeBlock, type IdeLanguage } from './ide-utils'
+import DOMPurify from 'dompurify'
+import { renderMarkdown } from './markdown'
 import type { IdeRunResult } from '../shared/types'
 
 const MONACO_LANG: Record<IdeLanguage, string> = {
@@ -31,6 +33,8 @@ let activeId = 0
 let nextTabId = 1
 let treeRoot: string | null = null
 let treeDir = ''
+let lastAiCode: string | null = null
+let lastAiRange: monaco.Range | null = null
 
 function h(tag: string, className?: string, text?: string): HTMLElement {
   const e = document.createElement(tag)
@@ -209,12 +213,87 @@ function runLanguage(tab: Tab): 'python' | 'cpp' | 'java' | null {
   return l === 'python' || l === 'cpp' || l === 'java' ? l : null
 }
 
+function bottomPanel(): { bottom: HTMLElement; head: HTMLElement; out: HTMLElement; ai: HTMLElement; apply: HTMLElement } {
+  return {
+    bottom: document.getElementById('ide-bottom') as HTMLElement,
+    head: document.getElementById('ide-bottom-head') as HTMLElement,
+    out: document.getElementById('ide-run-output') as HTMLElement,
+    ai: document.getElementById('ide-ai-body') as HTMLElement,
+    apply: document.getElementById('ide-apply-row') as HTMLElement
+  }
+}
+
 function showOutput(text: string): void {
-  const bottom = document.getElementById('ide-bottom')
-  const out = document.getElementById('ide-run-output')
-  if (!bottom || !out) return
-  bottom.classList.remove('hidden')
-  out.textContent = text
+  const p = bottomPanel()
+  p.bottom.classList.remove('hidden')
+  p.head.textContent = '输出'
+  p.out.classList.remove('hidden')
+  p.out.textContent = text
+  p.ai.classList.add('hidden')
+  p.apply.classList.add('hidden')
+}
+
+function showAiResult(text: string, action: 'explain' | 'debug' | 'optimize'): void {
+  const p = bottomPanel()
+  p.bottom.classList.remove('hidden')
+  p.head.textContent = 'AI 结果'
+  p.out.classList.add('hidden')
+  p.ai.classList.remove('hidden')
+  p.ai.innerHTML = DOMPurify.sanitize(renderMarkdown(text))
+  p.apply.classList.add('hidden')
+  if (action === 'optimize') {
+    const code = extractCodeBlock(text)
+    if (code) {
+      lastAiCode = code
+      p.apply.classList.remove('hidden')
+    }
+  }
+}
+
+function showAiLoading(): void {
+  const p = bottomPanel()
+  p.bottom.classList.remove('hidden')
+  p.head.textContent = 'AI 结果'
+  p.out.classList.add('hidden')
+  p.ai.classList.remove('hidden')
+  p.ai.textContent = 'AI 思考中…（首次启动较慢，请稍候）'
+  p.apply.classList.add('hidden')
+}
+
+async function aiAsk(action: 'explain' | 'debug' | 'optimize'): Promise<void> {
+  const tab = activeTab()
+  if (!tab || !editor) return
+  const sel = editor.getSelection()
+  let code = tab.model.getValue()
+  if (sel && !sel.isEmpty()) {
+    code = tab.model.getValueInRange(sel)
+    lastAiRange = sel
+  } else {
+    lastAiRange = null
+  }
+  try {
+    const tempPath = await window.api.ideRunTemp('ai_snippet.txt')
+    await window.api.ideWriteFile(tempPath, code)
+    showAiLoading()
+    const res = await window.api.aiAsk({ action, codePath: tempPath, language: runLanguage(tab) ?? 'plaintext' })
+    showAiResult(res.text, action)
+  } catch (e) {
+    showAiResult('AI 失败：' + (e instanceof Error ? e.message : String(e)), action)
+  }
+}
+
+function applyAiCode(): void {
+  const tab = activeTab()
+  if (!tab || lastAiCode == null || !editor) return
+  if (lastAiRange) {
+    editor.executeEdits('ai', [{ range: lastAiRange, text: lastAiCode }])
+  } else {
+    tab.model.setValue(lastAiCode)
+  }
+  lastAiCode = null
+  lastAiRange = null
+  const p = bottomPanel()
+  p.apply.classList.add('hidden')
 }
 
 async function runActive(): Promise<void> {
@@ -262,6 +341,14 @@ function buildDom(): void {
   const runBtn = h('button', 'btn', '运行')
   runBtn.addEventListener('click', () => void runActive())
   toolbar.appendChild(runBtn)
+  const aiBtn = (label: string, action: 'explain' | 'debug' | 'optimize'): HTMLElement => {
+    const b = h('button', 'btn', label)
+    b.addEventListener('click', () => void aiAsk(action))
+    return b
+  }
+  toolbar.appendChild(aiBtn('AI 解释', 'explain'))
+  toolbar.appendChild(aiBtn('AI 找错', 'debug'))
+  toolbar.appendChild(aiBtn('AI 优化', 'optimize'))
   toolbar.appendChild(h('span', 'spacer'))
   toolbar.appendChild(h('span', 'set-label', '语言'))
   const langSel = document.createElement('select')
@@ -299,10 +386,21 @@ function buildDom(): void {
 
   const bottom = h('div', 'ide-bottom hidden')
   bottom.id = 'ide-bottom'
-  bottom.appendChild(h('div', 'ide-panel-head', '输出'))
+  const head = h('div', 'ide-panel-head', '输出')
+  head.id = 'ide-bottom-head'
+  bottom.appendChild(head)
   const out = h('pre', 'ide-run-output', '')
   out.id = 'ide-run-output'
   bottom.appendChild(out)
+  const aiBody = h('div', 'gh-readme ide-ai-body')
+  aiBody.id = 'ide-ai-body'
+  bottom.appendChild(aiBody)
+  const applyRow = h('div', 'ide-apply-row hidden')
+  applyRow.id = 'ide-apply-row'
+  const applyBtn = h('button', 'btn primary', '应用到编辑器')
+  applyBtn.addEventListener('click', () => applyAiCode())
+  applyRow.appendChild(applyBtn)
+  bottom.appendChild(applyRow)
   panel.appendChild(bottom)
 }
 

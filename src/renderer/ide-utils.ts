@@ -32,6 +32,14 @@ export function defaultRunFileName(lang: IdeLanguage): string {
   return 'main.txt'
 }
 
+/** 从 Markdown 回答里提取最后一个 fenced code block。 */
+export function extractCodeBlock(md: string): string | null {
+  const blocks = md.match(/```[^\n]*\n([\s\S]*?)```/g)
+  if (!blocks || blocks.length === 0) return null
+  const last = blocks[blocks.length - 1]
+  return last.replace(/^```[^\n]*\n/, '').replace(/```\s*$/, '').trim()
+}
+
 /** 从完整路径取标签标题。 */
 export function tabTitleFromPath(path: string): string {
   const i = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'))

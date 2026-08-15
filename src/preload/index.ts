@@ -55,6 +55,7 @@ const api: WorkdeskApi = {
   ideDetectTools: () => ipcRenderer.invoke(IPC.ideDetectTools),
   ideRun: (req) => ipcRenderer.invoke(IPC.ideRun, req),
   ideRunTemp: (fileName) => ipcRenderer.invoke(IPC.ideRunTemp, fileName),
+  aiAsk: (req) => ipcRenderer.invoke(IPC.aiAsk, req),
   quitReal: () => ipcRenderer.invoke(IPC.appQuitReal),
   showWindow: () => ipcRenderer.invoke(IPC.appShowWindow),
   onNavigate: (cb) => subscribe<string>(IPC.appNavigate, cb),
