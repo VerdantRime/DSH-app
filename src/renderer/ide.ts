@@ -149,9 +149,79 @@ function updateGithubButtons(): void {
   const tab = activeTab()
   const dl = document.getElementById('ide-gh-download') as HTMLButtonElement | null
   const del = document.getElementById('ide-gh-delete') as HTMLButtonElement | null
+  const commit = document.getElementById('ide-gh-commit') as HTMLButtonElement | null
   const isGh = !!tab?.github
   if (dl) dl.disabled = !isGh
   if (del) del.disabled = !isGh || !(tab?.github?.canPush ?? false)
+  if (commit) commit.disabled = tabs.filter((t) => t.github).length === 0
+}
+
+async function openCommitPanel(): Promise<void> {
+  const gts = tabs.filter((t) => t.github)
+  if (gts.length === 0) { window.alert('当前没有已打开的 GitHub 文件'); return }
+  const p = bottomPanel()
+  p.bottom.classList.remove('hidden')
+  p.head.textContent = '批量提交（一次 commit）'
+  p.out.classList.add('hidden')
+  p.ai.classList.remove('hidden')
+  p.ai.replaceChildren()
+  const list = h('div', 'ide-commit-list')
+  for (const t of gts) {
+    const row = document.createElement('label')
+    row.className = 'ide-commit-row'
+    const cb = document.createElement('input')
+    cb.type = 'checkbox'
+    cb.checked = true
+    cb.dataset.tabId = String(t.id)
+    row.appendChild(cb)
+    row.appendChild(h('span', '', t.github!.path))
+    list.appendChild(row)
+  }
+  p.ai.appendChild(list)
+  const msg = document.createElement('input')
+  msg.className = 'gh-search'
+  msg.id = 'ide-commit-msg'
+  msg.placeholder = '提交说明（commit message）'
+  p.ai.appendChild(msg)
+  const btnRow = h('div', 'ide-apply-row')
+  const ok = h('button', 'btn primary', '确认提交')
+  ok.addEventListener('click', () => void confirmCommit())
+  const cancel = h('button', 'btn', '取消')
+  cancel.addEventListener('click', () => { p.bottom.classList.add('hidden') })
+  btnRow.appendChild(ok)
+  btnRow.appendChild(cancel)
+  p.ai.appendChild(btnRow)
+}
+
+async function confirmCommit(): Promise<void> {
+  const msgInput = document.getElementById('ide-commit-msg') as HTMLInputElement | null
+  const message = msgInput?.value.trim() || '批量更新文件'
+  const checkedIds = new Set<number>()
+  document.querySelectorAll<HTMLInputElement>('.ide-commit-row input[type=checkbox]').forEach((cb) => {
+    if (cb.checked) checkedIds.add(Number(cb.dataset.tabId))
+  })
+  const targets = tabs.filter((t) => t.github && checkedIds.has(t.id))
+  if (targets.length === 0) { window.alert('请至少勾选一个文件'); return }
+  const groups = new Map<string, { owner: string; repo: string; files: { path: string; content: string }[] }>()
+  for (const t of targets) {
+    const g = t.github!
+    const key = g.owner + '/' + g.repo
+    if (!groups.has(key)) groups.set(key, { owner: g.owner, repo: g.repo, files: [] })
+    groups.get(key)!.files.push({ path: g.path, content: t.model.getValue() })
+  }
+  try {
+    for (const grp of groups.values()) {
+      await window.api.githubCommitFiles(grp.owner, grp.repo, message, grp.files)
+    }
+    bottomPanel().bottom.classList.add('hidden')
+    flashStatus('已提交 ' + targets.length + ' 个文件')
+    for (const t of targets) {
+      const { file } = await window.api.githubGetContents(t.github!.owner, t.github!.repo, t.github!.path)
+      if (file) t.github!.sha = file.sha
+    }
+  } catch (e) {
+    window.alert('提交失败：' + githubErrorHint(e))
+  }
 }
 
 function renderTabs(): void {
@@ -421,6 +491,10 @@ function buildDom(): void {
   delG.id = 'ide-gh-delete'
   delG.addEventListener('click', () => void deleteGithubActive())
   toolbar.appendChild(delG)
+  const commitG = h('button', 'btn', '提交') as HTMLButtonElement
+  commitG.id = 'ide-gh-commit'
+  commitG.addEventListener('click', () => void openCommitPanel())
+  toolbar.appendChild(commitG)
   toolbar.appendChild(h('span', 'spacer'))
   toolbar.appendChild(h('span', 'set-label', '语言'))
   const langSel = document.createElement('select')

@@ -143,6 +143,7 @@ export interface IGithubClient {
   getRawFile(owner: string, repo: string, path: string): Promise<Buffer>
   getReadme(owner: string, repo: string): Promise<ReadmeContent | null>
   listTreeFiles(owner: string, repo: string, dirPath?: string): Promise<string[]>
+  createCommit(owner: string, repo: string, message: string, files: { path: string; content: string }[]): Promise<void>
 }
 
 export const DEFAULT_GITHUB_API = 'https://api.github.com'
@@ -317,6 +318,41 @@ export class GithubClient implements IGithubClient {
     return items
       .filter((t: any) => t.type === 'blob' && (dirPath === '' || t.path === dirPath || t.path.startsWith(dirPath + '/')))
       .map((t: any) => t.path)
+  }
+
+  /** 通过 Git Data API 把多个文件合并成一次 commit（新建/覆盖）。 */
+  async createCommit(
+    owner: string,
+    repo: string,
+    message: string,
+    files: { path: string; content: string }[]
+  ): Promise<void> {
+    if (files.length === 0) return
+    const repoInfo = await this.octokit.rest.repos.get({ owner, repo })
+    const branch = (repoInfo.data as any).default_branch ?? 'main'
+    const ref = await this.octokit.rest.git.getRef({ owner, repo, ref: 'heads/' + branch })
+    const baseCommitSha = (ref.data as any).object.sha as string
+    const commit = await this.octokit.rest.git.getCommit({ owner, repo, commit_sha: baseCommitSha })
+    const baseTree = (commit.data as any).tree.sha as string
+    const entries: { path: string; mode: '100644'; type: 'blob'; sha: string }[] = []
+    for (const f of files) {
+      const blob = await this.octokit.rest.git.createBlob({
+        owner,
+        repo,
+        content: Buffer.from(f.content, 'utf-8').toString('base64'),
+        encoding: 'base64'
+      })
+      entries.push({ path: f.path, mode: '100644', type: 'blob', sha: (blob.data as any).sha as string })
+    }
+    const tree = await this.octokit.rest.git.createTree({ owner, repo, base_tree: baseTree, tree: entries })
+    const newCommit = await this.octokit.rest.git.createCommit({
+      owner,
+      repo,
+      message,
+      tree: (tree.data as any).sha as string,
+      parents: [baseCommitSha]
+    })
+    await this.octokit.rest.git.updateRef({ owner, repo, ref: 'heads/' + branch, sha: (newCommit.data as any).sha as string })
   }
 
   async deleteFile(owner: string, repo: string, path: string, message: string, sha: string): Promise<void> {

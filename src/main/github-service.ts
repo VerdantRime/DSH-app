@@ -141,6 +141,10 @@ export class GithubService {
     return (await this.getClient()).listTreeFiles(owner, repo, dirPath)
   }
 
+  async commitFiles(owner: string, repo: string, message: string, files: { path: string; content: string }[]): Promise<void> {
+    await (await this.getClient()).createCommit(owner, repo, message, files)
+  }
+
   async downloadFiles(
     owner: string,
     repo: string,

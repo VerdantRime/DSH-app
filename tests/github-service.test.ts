@@ -30,6 +30,7 @@ function fakeClient(overrides: Partial<IGithubClient> = {}): IGithubClient {
     getRawFile: async () => Buffer.from('x'),
     getReadme: async () => null,
     listTreeFiles: async () => [],
+    createCommit: async () => {},
     ...overrides
   }
 }
@@ -91,6 +92,15 @@ describe('GithubService', () => {
     await svc.downloadFile('o', 'r', 'a.bin', dest)
     const buf = await fs.readFile(dest)
     expect([...buf]).toEqual([1, 2, 3, 250])
+  })
+
+  it('commitFiles 透传多文件与消息', async () => {
+    const calls: any[] = []
+    const creds = new CredentialsStore(join(dir, 'github.json'), cipher)
+    const svc = new GithubService(creds, () => fakeClient({ createCommit: async (...a: any[]) => { calls.push(a) } }))
+    await svc.setToken('tok')
+    await svc.commitFiles('o', 'r', 'msg', [{ path: 'a.md', content: 'A' }])
+    expect(calls).toEqual([['o', 'r', 'msg', [{ path: 'a.md', content: 'A' }]]])
   })
 
   it('downloadFiles 批量写入并跳过失败项', async () => {

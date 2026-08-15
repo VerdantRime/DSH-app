@@ -12,6 +12,38 @@ describe('github mappers', () => {
     expect(mapRepoDetail({ id: 1, name: 'x', full_name: 'a/x', owner: { login: 'a' }, permissions: { push: false } }).canPush).toBe(false)
   })
 
+  it('createCommit 通过 Git Data API 合并多文件一次提交', async () => {
+    let blobs = 0
+    let treeArgs: any = null
+    let commitArgs: any = null
+    let updateRef: any = null
+    const fake = {
+      rest: {
+        repos: { get: async () => ({ data: { default_branch: 'main' } }) },
+        git: {
+          getRef: async () => ({ data: { object: { sha: 'baseCommit' } } }),
+          getCommit: async () => ({ data: { tree: { sha: 'baseTree' } } }),
+          createBlob: async () => { blobs++; return { data: { sha: 'blob' + blobs } } },
+          createTree: async (a: any) => { treeArgs = a; return { data: { sha: 'newTree' } } },
+          createCommit: async (a: any) => { commitArgs = a; return { data: { sha: 'newCommit' } } },
+          updateRef: async (a: any) => { updateRef = a }
+        }
+      }
+    }
+    const c = new GithubClient('tok', { octokit: fake as any })
+    await c.createCommit('o', 'r', '批量修改', [{ path: 'a.md', content: 'A' }, { path: 'b.md', content: 'B' }])
+    expect(blobs).toBe(2)
+    expect(treeArgs.base_tree).toBe('baseTree')
+    expect(treeArgs.tree).toEqual([
+      { path: 'a.md', mode: '100644', type: 'blob', sha: 'blob1' },
+      { path: 'b.md', mode: '100644', type: 'blob', sha: 'blob2' }
+    ])
+    expect(commitArgs.message).toBe('批量修改')
+    expect(commitArgs.parents).toEqual(['baseCommit'])
+    expect(updateRef.ref).toBe('heads/main')
+    expect(updateRef.sha).toBe('newCommit')
+  })
+
   it('listTreeFiles 只返回目录下的 blob 文件', async () => {
     const fake = { rest: { git: { getTree: async () => ({ data: { tree: [
       { path: 'docs/a.md', type: 'blob' },

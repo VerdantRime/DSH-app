@@ -105,6 +105,7 @@ export function registerIpc(deps: IpcDeps): void {
   ipcMain.handle(IPC.githubDownloadFile, (_e, o, r, p, d) => deps.github.downloadFile(o, r, p, d))
   ipcMain.handle(IPC.githubGetReadme, (_e, o, r) => deps.github.getReadme(o, r))
   ipcMain.handle(IPC.githubListTree, (_e, o, r, d) => deps.github.listTreeFiles(o, r, d))
+  ipcMain.handle(IPC.githubCommitFiles, (_e, o, r, m, f) => deps.github.commitFiles(o, r, m, f))
   ipcMain.handle(IPC.githubDownloadFiles, (_e, o, r, p, d) => deps.github.downloadFiles(o, r, p, d))
   ipcMain.handle(IPC.githubPickSaveDir, async () => {
     const win = deps.getWindow()

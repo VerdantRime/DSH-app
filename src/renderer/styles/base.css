@@ -93,6 +93,8 @@ body {
 .ide-panel-head { padding: 6px 12px; font-size: 12px; font-weight: 700; color: var(--accent-strong); background: var(--sidebar-bg); border-bottom: 1px solid var(--border); }
 .ide-ai-body { padding: 10px 14px; max-height: 340px; overflow: auto; margin-top: 0; border-top: none; }
 .ide-ai-body.hidden { display: none; }
+.ide-commit-list { max-height: 200px; overflow: auto; margin-bottom: 8px; }
+.ide-commit-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; font-size: 13px; cursor: pointer; }
 .ide-apply-row { padding: 8px 12px; border-top: 1px solid var(--border); display: flex; gap: 8px; }
 .ide-apply-row.hidden { display: none; }
 .ide-run-output.hidden { display: none; }
