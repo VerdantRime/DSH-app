@@ -29,11 +29,11 @@ describe('runner 纯函数', () => {
     expect(javaMainClass('C:\\x\\Main.java')).toBe('Main')
   })
 
-  it('buildBatchScript 包含 cd、命令、暂停与 exit（跑完自动关窗）', () => {
+  it('buildBatchScript 程序路径始终加双引号（中文名防 cmd 元字符截断）', () => {
     const bat = buildBatchScript('C:\\test\\后续法建链表.exe', [], 'C:\\test')
     expect(bat).toContain('@echo off')
     expect(bat).toContain('cd /d')
-    expect(bat).toContain('后续法建链表.exe')
+    expect(bat).toContain('"C:\\test\\后续法建链表.exe"')
     expect(bat).toContain('pause')
     expect(bat).toContain('exit')
   })

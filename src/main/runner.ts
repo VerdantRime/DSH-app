@@ -62,8 +62,8 @@ function runCapture(cmd: string, args: string[], cwd: string, timeoutMs = 30000)
 }
 
 function quoteArg(a: string): string {
-  if (/[\s"&|<>^]/.test(a)) return '"' + a.replace(/"/g, '') + '"'
-  return a
+  // 始终加双引号：中文路径的 GBK 字节可能含 cmd 元字符（| & 等），引号内不会被解析
+  return '"' + a.replace(/"/g, '') + '"'
 }
 
 /** 生成交互式运行的批处理内容（cd 到工作目录并停留）。 */
