@@ -10,6 +10,7 @@ import type {
 } from '../shared/types'
 import DOMPurify from 'dompurify'
 import { renderMarkdown } from './markdown'
+import { parentPath, fileNameOf, joinRepoPath, validateNewFileName } from './github-utils'
 import { GITHUB_TOKEN_URL, TOKEN_HELP_STEPS } from './github-help'
 
 type ListMode = 'mine' | 'starred' | 'search'
@@ -45,11 +46,6 @@ function btn(label: string, onClick: () => void): HTMLButtonElement {
 
 function clear(node: HTMLElement): void {
   node.replaceChildren()
-}
-
-function parentPath(p: string): string {
-  const i = p.lastIndexOf('/')
-  return i <= 0 ? '' : p.slice(0, i)
 }
 
 function errMsg(e: unknown): string {
@@ -271,6 +267,7 @@ async function loadFiles(): Promise<void> {
     }
     const tools = h('div', 'gh-bar')
     tools.appendChild(btn('⬆ 上传文件', () => pickAndUpload()))
+    tools.appendChild(btn('＋ 新建文件', () => createFile()))
     content.appendChild(tools)
     if (tree.length === 0) {
       content.appendChild(h('div', 'gh-empty', '空目录'))
@@ -333,7 +330,7 @@ function pickAndUpload(): void {
 
 async function downloadFile(path: string): Promise<void> {
   if (!currentRepo) return
-  const name = path.split('/').pop() ?? path
+  const name = fileNameOf(path)
   try {
     const dest = await window.api.githubPickSavePath(name)
     if (!dest) return
@@ -342,6 +339,22 @@ async function downloadFile(path: string): Promise<void> {
   } catch (e) {
     window.alert('下载失败：' + errMsg(e))
   }
+}
+
+function createFile(): void {
+  if (!currentRepo) return
+  const name = window.prompt('新文件名（创建在当前目录）', '')
+  if (name === null) return
+  const err = validateNewFileName(name)
+  if (err) {
+    window.alert(err)
+    return
+  }
+  const target = joinRepoPath(filePath, name.trim())
+  renderEditor(target, '', undefined, () => {
+    filePath = parentPath(target)
+    void loadFiles()
+  })
 }
 
 async function loadFileContent(path: string): Promise<void> {
@@ -361,7 +374,7 @@ async function loadFileContent(path: string): Promise<void> {
         filePath = parentPath(path)
         void loadFiles()
       }))
-      bar.appendChild(btn('编辑', () => renderEditor(path)))
+      bar.appendChild(btn('编辑', () => renderEditor(path, currentFileContent, currentFileSha)))
       bar.appendChild(btn('⬇ 下载', () => void downloadFile(path)))
       bar.appendChild(btn('删除', () => {
         if (!window.confirm('确定删除文件 ' + path + ' 吗？此操作会产生一次删除提交。')) return
@@ -386,7 +399,7 @@ async function loadFileContent(path: string): Promise<void> {
   }
 }
 
-function renderEditor(path: string): void {
+function renderEditor(path: string, initialContent?: string, sha?: string, afterSave?: () => void): void {
   if (!currentRepo) return
   const content = document.getElementById('gh-content')
   if (!content) return
@@ -394,21 +407,22 @@ function renderEditor(path: string): void {
   content.appendChild(h('h3', '', '编辑 ' + path))
   const ta = document.createElement('textarea')
   ta.className = 'gh-editor'
-  ta.value = currentFileContent
+  ta.value = initialContent ?? currentFileContent
   content.appendChild(ta)
   const msg = document.createElement('input')
   msg.className = 'gh-search'
   msg.placeholder = '提交说明（commit message）'
   content.appendChild(msg)
+  const done = afterSave ?? (() => void loadFileContent(path))
   const row = h('div', 'set-row')
   row.appendChild(btn('提交', () => {
     const message = msg.value.trim() || 'Update ' + path
     void window.api
-      .githubSaveFile(currentRepo!.owner, currentRepo!.repo, path, ta.value, message, currentFileSha)
-      .then(() => loadFileContent(path))
+      .githubSaveFile(currentRepo!.owner, currentRepo!.repo, path, ta.value, message, sha)
+      .then(done)
       .catch((e) => window.alert('提交失败：' + errMsg(e)))
   }))
-  row.appendChild(btn('取消', () => void loadFileContent(path)))
+  row.appendChild(btn('取消', done))
   content.appendChild(row)
 }
 
