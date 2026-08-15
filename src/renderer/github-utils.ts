@@ -55,6 +55,23 @@ export function isSafeRepoPath(p: string): boolean {
   return typeof p === 'string' && p.length > 0 && !p.includes('\\') && !p.split('/').includes('..')
 }
 
+export interface FileTypeInfo { label: string; color: string }
+
+/** 依据扩展名归类文件类型，返回短标签（如 TS/MD/PNG）与代表色。 */
+export function fileTypeInfo(name: string): FileTypeInfo {
+  const base = name.toLowerCase()
+  const dot = name.lastIndexOf('.')
+  const ext = dot >= 0 ? name.slice(dot + 1) : ''
+  if (isMarkdownFile(name)) return { label: 'MD', color: '#4C5F98' }
+  if (/^(png|jpe?g|gif|svg|webp|ico|bmp|avif)$/.test(ext)) return { label: 'IMG', color: '#3AA48E' }
+  if (/^(js|mjs|cjs|jsx|ts|tsx|mts|cts)$/.test(ext)) return { label: ext.toUpperCase(), color: '#E8A33D' }
+  if (/^(css|scss|sass|less|html|htm|vue|svelte)$/.test(ext)) return { label: ext.toUpperCase(), color: '#5B8DEF' }
+  if (/^(json|ya?ml|toml|xml|csv|env|ini)$/.test(ext)) return { label: ext.toUpperCase(), color: '#8A6FD1' }
+  if (/^(sh|bash|zsh|fish|bat|cmd|ps1)$/.test(ext)) return { label: ext.toUpperCase(), color: '#4FAE6B' }
+  if (/^(zip|7z|rar|tar|gz|bz2|xz|exe|dll|msi|apk|bin)$/.test(ext)) return { label: ext.toUpperCase(), color: '#D15C5C' }
+  return { label: ext ? ext.toUpperCase().slice(0, 4) : 'TXT', color: '#8B949E' }
+}
+
 export function isMarkdownFile(name: string): boolean {
   return /\.(md|markdown|mdown|mkd)$/i.test(name)
 }

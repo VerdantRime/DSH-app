@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parentPath, fileNameOf, joinRepoPath, validateNewFileName, breadcrumbSegments, formatFileSize, isMarkdownFile, githubErrorHint, isSafeRepoPath } from '../src/renderer/github-utils'
+import { parentPath, fileNameOf, joinRepoPath, validateNewFileName, breadcrumbSegments, formatFileSize, isMarkdownFile, githubErrorHint, isSafeRepoPath, fileTypeInfo } from '../src/renderer/github-utils'
 
 describe('github-utils 路径工具', () => {
   it('parentPath 返回上级目录', () => {
@@ -26,6 +26,16 @@ describe('github-utils 路径工具', () => {
       { label: 'a', path: 'docs/a' },
       { label: 'b', path: 'docs/a/b' }
     ])
+  })
+
+  it('fileTypeInfo 按扩展名归类并给代表色', () => {
+    expect(fileTypeInfo('README.md')).toEqual({ label: 'MD', color: '#4C5F98' })
+    expect(fileTypeInfo('app.ts').label).toBe('TS')
+    expect(fileTypeInfo('app.ts').color).toBe('#E8A33D')
+    expect(fileTypeInfo('logo.png')).toEqual({ label: 'IMG', color: '#3AA48E' })
+    expect(fileTypeInfo('data.json').label).toBe('JSON')
+    expect(fileTypeInfo('Dockerfile').label).toBe('TXT')
+    expect(fileTypeInfo('archive.zip').color).toBe('#D15C5C')
   })
 
   it('isSafeRepoPath 拒绝越界与反斜杠路径', () => {

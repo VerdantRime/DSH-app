@@ -302,7 +302,7 @@ export class GithubClient implements IGithubClient {
 
   /** 列出仓库（或某目录下）所有文件路径，用于多文件/整目录下载。 */
   async listTreeFiles(owner: string, repo: string, dirPath = ''): Promise<string[]> {
-    const res = await this.octokit.rest.git.getTree({ owner, repo, tree_sha: 'HEAD', recursive: true })
+    const res = await this.octokit.rest.git.getTree({ owner, repo, tree_sha: 'HEAD', recursive: 'true' })
     const data = res.data as any
     const items = Array.isArray(data?.tree) ? data.tree : []
     return items

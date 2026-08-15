@@ -172,7 +172,10 @@ body {
 .gh-file-icon svg { width: 16px; height: 16px; display: block; }
 .gh-file-row:hover .gh-file-icon { color: var(--brand-blue); }
 .gh-file-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.gh-file-size { flex: none; color: var(--fg-muted); font-size: 12px; }
+.gh-file-icon.dir { color: var(--brand-blue); }
+.gh-file-icon.file { color: var(--fg-muted); }
+.gh-file-ext { flex: none; font-size: 10px; font-weight: 700; letter-spacing: .3px; border: 1px solid; border-radius: var(--radius-xs); padding: 1px 5px; opacity: .85; }
+.gh-file-size { flex: none; color: var(--fg); background: var(--hover); font-size: 12px; font-weight: 600; border-radius: var(--radius-pill); padding: 2px 9px; }
 .gh-code, .gh-body {
   margin: 8px 0; padding: 12px 14px; background: var(--sidebar-bg);
   border: 1px solid var(--border); border-radius: var(--radius-md);

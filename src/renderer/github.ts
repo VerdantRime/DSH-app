@@ -11,7 +11,7 @@ import type {
 import { FOLDER_ICON, FILE_ICON, GITHUB_ICON } from './icons'
 import DOMPurify from 'dompurify'
 import { renderMarkdown } from './markdown'
-import { parentPath, fileNameOf, joinRepoPath, validateNewFileName, breadcrumbSegments, formatFileSize, isMarkdownFile, githubErrorHint, isSafeRepoPath } from './github-utils'
+import { parentPath, fileNameOf, joinRepoPath, validateNewFileName, breadcrumbSegments, formatFileSize, isMarkdownFile, githubErrorHint, isSafeRepoPath, fileTypeInfo } from './github-utils'
 import { GITHUB_TOKEN_URL, TOKEN_HELP_STEPS } from './github-help'
 
 type ListMode = 'mine' | 'starred' | 'search'
@@ -327,9 +327,23 @@ async function loadFiles(): Promise<void> {
       row.appendChild(cb)
       const ficon = document.createElement('span')
       ficon.className = 'gh-file-icon'
-      ficon.innerHTML = n.type === 'dir' ? FOLDER_ICON : FILE_ICON
+      if (n.type === 'dir') {
+        ficon.classList.add('dir')
+        ficon.innerHTML = FOLDER_ICON
+      } else {
+        ficon.classList.add('file')
+        ficon.style.color = fileTypeInfo(n.name).color
+        ficon.innerHTML = FILE_ICON
+      }
       row.appendChild(ficon)
       row.appendChild(h('span', 'gh-file-label', n.name))
+      if (n.type === 'file') {
+        const info = fileTypeInfo(n.name)
+        const badge = h('span', 'gh-file-ext', info.label)
+        badge.style.color = info.color
+        badge.style.borderColor = info.color
+        row.appendChild(badge)
+      }
       if (n.type === 'file' && n.size > 0) {
         row.appendChild(h('span', 'gh-file-size', formatFileSize(n.size)))
       }

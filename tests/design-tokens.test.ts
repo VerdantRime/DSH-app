@@ -52,6 +52,12 @@ describe('设计令牌（依据 awesome-design-md 规范）', () => {
     expect(gh).not.toContain('🐙')
   })
 
+  it('文件类型徽章与文件夹图标色已区分', () => {
+    expect(base).toContain('.gh-file-ext')
+    expect(base).toContain('.gh-file-icon.dir')
+    expect(base).toContain('--brand-blue')
+  })
+
   it('主按钮使用品牌蓝渐变', () => {
     expect(base).toContain('.btn.primary')
     expect(base).toContain('var(--brand-blue)')
