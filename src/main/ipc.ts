@@ -7,7 +7,7 @@ import { run } from './runner'
 import { tmpdir } from 'os'
 import { join } from 'path'
 import type { IdeRunRequest } from '../shared/types'
-import { askHeadless, buildAiTask } from './ai'
+import { askWithModel, buildAiTask } from './ai'
 import { cloneRepo, repoNameFromUrl, validateCloneUrl } from './clone'
 import type { ConfigStore } from './store'
 import type { HarnessManager } from './harness-manager'
@@ -71,10 +71,10 @@ export function registerIpc(deps: IpcDeps): void {
     })
   })
   ipcMain.handle(IPC.ideRunTemp, (_e, fileName: string) => join(tmpdir(), 'dsh-ide', fileName))
-  ipcMain.handle(IPC.aiAsk, async (_e, req: { action: 'explain' | 'debug' | 'optimize'; codePath: string; language: string }) => {
+  ipcMain.handle(IPC.aiAsk, async (_e, req: { action: 'explain' | 'debug' | 'optimize'; codePath: string; language: string; model?: string }) => {
     const task = buildAiTask(req.action, req.codePath, req.language)
     const dshHome = deps.store.get().harness.dataDir
-    const text = await askHeadless(task, { dshHome })
+    const text = await askWithModel(task, { dshHome, model: req.model })
     return { text }
   })
   ipcMain.handle(IPC.appShowWindow, () => deps.getWindow()?.show())

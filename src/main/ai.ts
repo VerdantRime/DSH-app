@@ -1,4 +1,7 @@
 import { spawn } from 'child_process'
+import { readFile, writeFile } from 'fs/promises'
+import { join } from 'path'
+import { load, dump } from 'js-yaml'
 import { extractCodeBlock } from '../renderer/ide-utils'
 
 export type AiAction = 'explain' | 'debug' | 'optimize'
@@ -17,6 +20,27 @@ export function buildAiTask(action: AiAction, codePath: string, language: string
 export { extractCodeBlock } from '../renderer/ide-utils'
 
 export interface AskOptions { dshHome: string; timeoutMs?: number }
+
+/** 在 settings.yaml 文本里覆盖 agent-default-model.model（保留 provider 与其它字段）。 */
+export function withModel(yamlText: string, model: string): string {
+  const doc = (load(yamlText) as Record<string, unknown>) ?? {}
+  const cur = (doc['agent-default-model'] as Record<string, unknown>) ?? {}
+  doc['agent-default-model'] = { ...cur, provider: cur.provider ?? 'deepseek-official', model }
+  return dump(doc, { lineWidth: -1 })
+}
+
+/** 带模型切换的一次询问：临时改写 settings.yaml 后运行，finally 恢复原样。 */
+export async function askWithModel(task: string, opts: AskOptions & { model?: string }): Promise<string> {
+  if (!opts.model) return askHeadless(task, opts)
+  const sp = join(opts.dshHome, 'settings.yaml')
+  const original = await readFile(sp, 'utf-8').catch(() => null)
+  try {
+    if (original !== null) await writeFile(sp, withModel(original, opts.model), 'utf-8')
+    return await askHeadless(task, opts)
+  } finally {
+    if (original !== null) await writeFile(sp, original, 'utf-8').catch(() => {})
+  }
+}
 
 /** 调起 dsh --profile headless 极简智能体，返回最后一条 assistant 文本。 */
 export function askHeadless(task: string, opts: AskOptions): Promise<string> {

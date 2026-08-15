@@ -114,6 +114,11 @@ body {
 .ide-tree-icon { width: 12px; flex: none; color: var(--brand-blue); }
 .ide-tree-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ide-editor-wrap { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.ide-ai-panel { width: 320px; flex: none; border-left: 1px solid var(--border); background: var(--sidebar-bg); display: flex; flex-direction: column; min-height: 0; }
+.ide-ai-head { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+.ide-ai-title { font-size: 13px; font-weight: 700; color: var(--accent-strong); white-space: nowrap; }
+.ide-ai-actions { display: flex; gap: 6px; padding: 8px 10px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.ide-ai-result { flex: 1; min-height: 0; overflow: auto; padding: 10px 12px; margin: 0; border-top: none; }
 .ide-tab-close { margin-left: 8px; color: var(--fg-muted); opacity: 0; }
 .ide-tab:hover .ide-tab-close { opacity: 1; }
 .ide-tab-close:hover { color: #cf222e; }

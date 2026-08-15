@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildAiTask } from '../src/main/ai'
+import { buildAiTask, withModel } from '../src/main/ai'
 import { extractCodeBlock } from '../src/renderer/ide-utils'
 
 describe('AI 任务构建与结果解析', () => {
@@ -10,6 +10,15 @@ describe('AI 任务构建与结果解析', () => {
     const o = buildAiTask('optimize', 'C:\\x\\main.cpp', 'cpp')
     expect(o).toContain('优化')
     expect(o).toContain('fenced code block')
+  })
+
+  it('withModel 覆盖模型并保留其它字段', () => {
+    const src = 'ui-onboarding:\n  welcomeNoticeVersion: 1\nagent-default-model:\n  provider: deepseek-official\n  model: deepseek-v4-pro\n  reasoningEffort: high\n'
+    const out = withModel(src, 'deepseek-chat')
+    expect(out).toContain('model: deepseek-chat')
+    expect(out).toContain('provider: deepseek-official')
+    expect(out).toContain('ui-onboarding')
+    expect(out).not.toContain('deepseek-v4-pro')
   })
 
   it('extractCodeBlock 提取最后一个代码块', () => {

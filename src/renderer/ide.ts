@@ -37,6 +37,13 @@ let treeDir = ''
 let projectMode = false
 let lastAiCode: string | null = null
 let lastAiRange: monaco.Range | null = null
+const AI_MODELS: { id: string; label: string }[] = [
+  { id: '', label: '默认（跟随 DSH）' },
+  { id: 'deepseek-chat', label: 'DeepSeek V3 (chat)' },
+  { id: 'deepseek-reasoner', label: 'DeepSeek R1 (reasoner)' },
+  { id: 'deepseek-v4-pro', label: 'DeepSeek V4 Pro' }
+]
+let aiModel = ''
 
 function h(tag: string, className?: string, text?: string): HTMLElement {
   const e = document.createElement(tag)
@@ -374,31 +381,30 @@ function showOutput(text: string): void {
   p.apply.classList.add('hidden')
 }
 
+function aiEls(): { result: HTMLElement; apply: HTMLElement } {
+  return {
+    result: document.getElementById('ide-ai-result') as HTMLElement,
+    apply: document.getElementById('ide-ai-apply') as HTMLElement
+  }
+}
+
 function showAiResult(text: string, action: 'explain' | 'debug' | 'optimize'): void {
-  const p = bottomPanel()
-  p.bottom.classList.remove('hidden')
-  p.head.textContent = 'AI 结果'
-  p.out.classList.add('hidden')
-  p.ai.classList.remove('hidden')
-  p.ai.innerHTML = DOMPurify.sanitize(renderMarkdown(text))
-  p.apply.classList.add('hidden')
+  const els = aiEls()
+  els.result.innerHTML = DOMPurify.sanitize(renderMarkdown(text))
+  els.apply.classList.add('hidden')
   if (action === 'optimize') {
     const code = extractCodeBlock(text)
     if (code) {
       lastAiCode = code
-      p.apply.classList.remove('hidden')
+      els.apply.classList.remove('hidden')
     }
   }
 }
 
 function showAiLoading(): void {
-  const p = bottomPanel()
-  p.bottom.classList.remove('hidden')
-  p.head.textContent = 'AI 结果'
-  p.out.classList.add('hidden')
-  p.ai.classList.remove('hidden')
-  p.ai.textContent = 'AI 思考中…（首次启动较慢，请稍候）'
-  p.apply.classList.add('hidden')
+  const els = aiEls()
+  els.result.textContent = 'AI 思考中…（首次启动较慢，请稍候）'
+  els.apply.classList.add('hidden')
 }
 
 async function aiAsk(action: 'explain' | 'debug' | 'optimize'): Promise<void> {
@@ -416,7 +422,7 @@ async function aiAsk(action: 'explain' | 'debug' | 'optimize'): Promise<void> {
     const tempPath = await window.api.ideRunTemp('ai_snippet.txt')
     await window.api.ideWriteFile(tempPath, code)
     showAiLoading()
-    const res = await window.api.aiAsk({ action, codePath: tempPath, language: runLanguage(tab) ?? 'plaintext' })
+    const res = await window.api.aiAsk({ action, codePath: tempPath, language: runLanguage(tab) ?? 'plaintext', model: aiModel || undefined })
     showAiResult(res.text, action)
   } catch (e) {
     showAiResult('AI 失败：' + (e instanceof Error ? e.message : String(e)), action)
@@ -433,8 +439,7 @@ function applyAiCode(): void {
   }
   lastAiCode = null
   lastAiRange = null
-  const p = bottomPanel()
-  p.apply.classList.add('hidden')
+  aiEls().apply.classList.add('hidden')
 }
 
 async function runActive(): Promise<void> {
@@ -491,14 +496,6 @@ function buildDom(): void {
   projLabel.appendChild(projCb)
   projLabel.appendChild(h('span', '', '项目编译'))
   toolbar.appendChild(projLabel)
-  const aiBtn = (label: string, action: 'explain' | 'debug' | 'optimize'): HTMLElement => {
-    const b = h('button', 'btn', label)
-    b.addEventListener('click', () => void aiAsk(action))
-    return b
-  }
-  toolbar.appendChild(aiBtn('AI 解释', 'explain'))
-  toolbar.appendChild(aiBtn('AI 找错', 'debug'))
-  toolbar.appendChild(aiBtn('AI 优化', 'optimize'))
   const dlG = h('button', 'btn', '下载') as HTMLButtonElement
   dlG.id = 'ide-gh-download'
   dlG.addEventListener('click', () => void downloadGithubActive())
@@ -544,6 +541,39 @@ function buildDom(): void {
   host.id = 'ide-editor'
   wrap.appendChild(host)
   main.appendChild(wrap)
+  // 右侧 AI 面板
+  const aiPanel = h('aside', 'ide-ai-panel')
+  aiPanel.id = 'ide-ai-panel'
+  const aiHead = h('div', 'ide-ai-head')
+  aiHead.appendChild(h('span', 'ide-ai-title', 'AI 助手'))
+  const modelSel = document.createElement('select')
+  modelSel.id = 'ide-ai-model'
+  modelSel.className = 'gh-search'
+  modelSel.style.cssText = 'flex:1 1 auto; min-width:0;'
+  for (const m of AI_MODELS) { const o = document.createElement('option'); o.value = m.id; o.textContent = m.label; modelSel.appendChild(o) }
+  modelSel.addEventListener('change', () => { aiModel = modelSel.value })
+  aiHead.appendChild(modelSel)
+  aiPanel.appendChild(aiHead)
+  const aiActions = h('div', 'ide-ai-actions')
+  const mkAi = (label: string, action: 'explain' | 'debug' | 'optimize'): HTMLElement => {
+    const b = h('button', 'btn', label)
+    b.addEventListener('click', () => void aiAsk(action))
+    return b
+  }
+  aiActions.appendChild(mkAi('解释', 'explain'))
+  aiActions.appendChild(mkAi('找错', 'debug'))
+  aiActions.appendChild(mkAi('优化', 'optimize'))
+  aiPanel.appendChild(aiActions)
+  const aiResult = h('div', 'gh-readme ide-ai-result', '选中代码后点击「解释 / 找错 / 优化」')
+  aiResult.id = 'ide-ai-result'
+  aiPanel.appendChild(aiResult)
+  const aiApply = h('div', 'ide-apply-row hidden')
+  aiApply.id = 'ide-ai-apply'
+  const applyBtn2 = h('button', 'btn primary', '应用到编辑器')
+  applyBtn2.addEventListener('click', () => applyAiCode())
+  aiApply.appendChild(applyBtn2)
+  aiPanel.appendChild(aiApply)
+  main.appendChild(aiPanel)
   panel.appendChild(main)
 
   const bottom = h('div', 'ide-bottom hidden')
