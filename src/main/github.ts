@@ -51,6 +51,14 @@ export function mapFileNode(e: any): FileNode {
   return { name: e.name ?? '', path: e.path ?? '', type: e.type === 'dir' ? 'dir' : 'file' }
 }
 
+/** 文件浏览器排序：文件夹置顶、同组按名称字母序；不修改原数组。 */
+export function sortFileTree(nodes: FileNode[]): FileNode[] {
+  return [...nodes].sort((a, b) => {
+    if (a.type !== b.type) return a.type === 'dir' ? -1 : 1
+    return a.name.localeCompare(b.name)
+  })
+}
+
 export function mapIssueSummary(i: any): IssueSummary {
   return {
     number: i.number ?? 0,
@@ -197,7 +205,7 @@ export class GithubClient implements IGithubClient {
     const res = await this.octokit.rest.repos.getContent({ owner, repo, path })
     const data = res.data as any
     if (Array.isArray(data)) {
-      return { tree: data.map(mapFileNode), file: null }
+      return { tree: sortFileTree(data.map(mapFileNode)), file: null }
     }
     const content =
       data && data.encoding === 'base64' && data.content

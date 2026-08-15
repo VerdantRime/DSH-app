@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest'
-import { GithubClient, validateGithubInput, mapRepoSummary, mapPullSummary, mapCommitSummary, mapIssueSummary } from '../src/main/github'
+import { GithubClient, validateGithubInput, mapRepoSummary, mapPullSummary, mapCommitSummary, mapIssueSummary, sortFileTree, mapFileNode } from '../src/main/github'
+
+function node(name: string, type: 'file' | 'dir', path = name): any {
+  return { name, path, type }
+}
 
 describe('github mappers', () => {
   it('mapRepoSummary 映射字段', () => {
@@ -91,6 +95,21 @@ describe('GithubClient 端点', () => {
     const c = new GithubClient('tok', { octokit: fake as any })
     await c.createOrUpdateFile('o', 'r', 'new.md', 'content', '新增')
     expect(captured.sha).toBeUndefined()
+  })
+
+  it('sortFileTree 文件夹置顶、组内字母序、不改原数组', () => {
+    const input = [node('zeta.md', 'file'), node('alpha', 'dir'), node('beta.ts', 'file'), node('aaa', 'dir')]
+    const original = [...input]
+    const out = sortFileTree(input.map(mapFileNode))
+    expect(out.map((n) => n.name)).toEqual(['aaa', 'alpha', 'beta.ts', 'zeta.md'])
+    expect(out.map((n) => n.type)).toEqual(['dir', 'dir', 'file', 'file'])
+    // 原数组顺序不变
+    expect(input).toEqual(original)
+  })
+
+  it('sortFileTree 大小写不敏感排序且文件置底', () => {
+    const out = sortFileTree([node('Zebra', 'file'), node('apple', 'file'), node('Bob', 'dir')].map(mapFileNode))
+    expect(out.map((n) => n.name)).toEqual(['Bob', 'apple', 'Zebra'])
   })
 
   it('validateGithubInput 校验 token 与地址', () => {
