@@ -330,22 +330,47 @@ export function ideOpenFolderAt(dir: string): void {
   document.dispatchEvent(new CustomEvent('dsh:navigate', { detail: 'ide' }))
 }
 
-async function renameLocalPath(path: string): Promise<void> {
-  const oldName = tabTitleFromPath(path)
-  const newName = window.prompt('新名称', oldName)
-  if (!newName || !newName.trim() || newName.trim() === oldName) return
-  try {
-    const { newPath } = await window.api.ideRenameFile(path, newName.trim())
-    const t = tabs.find((x) => x.path === path)
-    if (t) {
-      t.path = newPath
-      t.title = tabTitleFromPath(newPath)
-      monaco.editor.setModelLanguage(t.model, MONACO_LANG[languageForFile(newPath)])
-      renderTabs()
+function startInlineRename(row: HTMLElement, name: string, path: string): void {
+  const nameSpan = row.querySelector('.ide-tree-name') as HTMLElement | null
+  if (!nameSpan) return
+  const input = document.createElement('input')
+  input.className = 'ide-tree-input'
+  input.value = name
+  nameSpan.replaceWith(input)
+  input.focus()
+  input.select()
+  let done = false
+  const finish = (newName: string): void => {
+    if (done) return
+    done = true
+    if (newName.trim() && newName.trim() !== name) {
+      void window.api.ideRenameFile(path, newName.trim()).then(({ newPath }) => {
+        const t = tabs.find((x) => x.path === path)
+        if (t) { t.path = newPath; t.title = tabTitleFromPath(newPath); monaco.editor.setModelLanguage(t.model, MONACO_LANG[languageForFile(newPath)]); renderTabs() }
+        highlightPath = newPath
+        void renderTree()
+        flashStatus('已重命名为：' + newPath)
+      }).catch((err) => { void renderTree(); window.alert('重命名失败：' + (err instanceof Error ? err.message : String(err))) })
+    } else {
+      void renderTree()
     }
-    void renderTree()
-    flashStatus('已重命名为：' + newPath)
-  } catch (err) { window.alert('重命名失败：' + (err instanceof Error ? err.message : String(err))) }
+  }
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') finish(input.value)
+    else if (e.key === 'Escape') finish('')
+  })
+  input.addEventListener('blur', () => finish(input.value))
+}
+
+function renameLocalPath(path: string): void {
+  treeDir = parentDir(path)
+  document.getElementById('ide-tree')?.classList.remove('hidden')
+  void (async () => {
+    await renderTree()
+    const rows = Array.from(document.querySelectorAll('.ide-tree-row')) as HTMLElement[]
+    const row = rows.find((r) => r.title === path)
+    if (row) startInlineRename(row, tabTitleFromPath(path), path)
+  })()
 }
 
 async function deleteLocalPath(path: string): Promise<void> {
@@ -645,22 +670,13 @@ async function deleteActiveFile(): Promise<void> {
   } catch (e) { window.alert('删除失败：' + (e instanceof Error ? e.message : String(e))) }
 }
 
-async function renameActiveFile(): Promise<void> {
+function renameActiveFile(): void {
   const tab = activeTab()
   if (!tab) return
   if (tab.github) { window.alert('这是 GitHub 文件，暂不支持在此重命名'); return }
   if (!tab.path) { window.alert('当前标签尚未保存到磁盘，无法重命名（请先 Ctrl+S 保存）'); return }
-  const oldName = tabTitleFromPath(tab.path)
-  const newName = window.prompt('新文件名', oldName)
-  if (!newName || !newName.trim() || newName.trim() === oldName) return
-  try {
-    const { newPath } = await window.api.ideRenameFile(tab.path, newName.trim())
-    tab.path = newPath
-    tab.title = tabTitleFromPath(newPath)
-    monaco.editor.setModelLanguage(tab.model, MONACO_LANG[languageForFile(newPath)])
-    renderTabs()
-    flashStatus('已重命名为：' + newPath)
-  } catch (e) { window.alert('重命名失败：' + (e instanceof Error ? e.message : String(e))) }
+  if (!treeRoot) { window.alert('请先点工具栏「打开文件夹」打开项目文件夹，再重命名'); return }
+  renameLocalPath(tab.path)
 }
 
 function revealInTree(): void {
