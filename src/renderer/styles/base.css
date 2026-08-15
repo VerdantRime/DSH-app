@@ -195,6 +195,13 @@ body {
 .gh-ctx-menu { position: fixed; z-index: 9999; min-width: 160px; background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: var(--shadow-md); padding: 4px; display: flex; flex-direction: column; }
 .gh-ctx-item { border: none; background: transparent; color: var(--fg); text-align: left; padding: 6px 12px; border-radius: var(--radius-sm); cursor: pointer; font-size: 13px; white-space: nowrap; }
 .gh-ctx-item:hover { background: var(--hover); }
+.gh-progress-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 10001; display: flex; align-items: center; justify-content: center; }
+.gh-progress-box { width: 360px; max-width: 88vw; background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); padding: 18px 20px; }
+.gh-progress-label { font-size: 13px; color: var(--fg); margin-bottom: 12px; }
+.gh-progress-bar { height: 8px; border-radius: var(--radius-pill); background: var(--hover); overflow: hidden; }
+.gh-progress-fill { height: 100%; width: 0; border-radius: var(--radius-pill); background: linear-gradient(90deg, var(--brand-blue), var(--brand-indigo)); }
+.gh-progress-fill.indeterminate { width: 40% !important; animation: progress-slide 1.2s ease-in-out infinite; }
+@keyframes progress-slide { 0% { margin-left: -40%; } 100% { margin-left: 100%; } }
 .gh-meta-tag { font-size: 11px; font-weight: 700; color: var(--accent-strong); background: var(--accent-soft); border-radius: var(--radius-pill); padding: 2px 8px; }
 .gh-list { display: flex; flex-direction: column; gap: 10px; }
 .gh-card {

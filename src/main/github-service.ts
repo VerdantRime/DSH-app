@@ -149,17 +149,21 @@ export class GithubService {
     owner: string,
     repo: string,
     paths: string[],
-    destDir: string
+    destDir: string,
+    onProgress?: (done: number, total: number) => void
   ): Promise<{ saved: number; skipped: number }> {
     if (paths.length === 0) return { saved: 0, skipped: 0 }
     if (paths.length > 300) throw new Error('一次最多下载 300 个文件，请分批选择')
     const client = await this.getClient()
     let saved = 0
     let skipped = 0
+    let done = 0
     for (const p of paths) {
       const parts = p.split('/')
       if (!p || parts.includes('..') || p.includes('\\')) {
         skipped++
+        done++
+        onProgress?.(done, paths.length)
         continue
       }
       try {
@@ -171,6 +175,8 @@ export class GithubService {
       } catch {
         skipped++
       }
+      done++
+      onProgress?.(done, paths.length)
     }
     return { saved, skipped }
   }

@@ -182,6 +182,7 @@ export const IPC = {
   githubListTree: 'github:listTree',
   githubDownloadFiles: 'github:downloadFiles',
   githubPickSaveDir: 'github:pickSaveDir',
+  githubDownloadProgress: 'github:downloadProgress',
   githubListIssues: 'github:listIssues',
   githubGetIssue: 'github:getIssue',
   githubListPulls: 'github:listPulls',
@@ -245,6 +246,7 @@ export interface WorkdeskApi {
   gitClone(url: string): Promise<{ ok: boolean; dir?: string; error?: string }>
   githubDownloadFiles(owner: string, repo: string, paths: string[], destDir: string): Promise<{ saved: number; skipped: number }>
   githubPickSaveDir(): Promise<string | null>
+  onGithubDownloadProgress(cb: (p: { done: number; total: number }) => void): () => void
   githubListIssues(owner: string, repo: string, state: 'open' | 'closed'): Promise<IssueSummary[]>
   githubGetIssue(owner: string, repo: string, number: number): Promise<IssueDetail>
   githubListPulls(owner: string, repo: string, state: 'open' | 'closed'): Promise<PullSummary[]>

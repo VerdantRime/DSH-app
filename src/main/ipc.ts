@@ -125,7 +125,7 @@ export function registerIpc(deps: IpcDeps): void {
       return { ok: false, error: e instanceof Error ? e.message : String(e) }
     }
   })
-  ipcMain.handle(IPC.githubDownloadFiles, (_e, o, r, p, d) => deps.github.downloadFiles(o, r, p, d))
+  ipcMain.handle(IPC.githubDownloadFiles, (_e, o, r, p, d) => deps.github.downloadFiles(o, r, p, d, (done, total) => deps.getWindow()?.webContents.send(IPC.githubDownloadProgress, { done, total })))
   ipcMain.handle(IPC.githubPickSaveDir, async () => {
     const win = deps.getWindow()
     const opts: Electron.OpenDialogOptions = { properties: ['openDirectory', 'createDirectory'] }

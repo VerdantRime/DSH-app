@@ -401,12 +401,16 @@ async function downloadSelected(): Promise<void> {
     }
     const dest = await window.api.githubPickSaveDir()
     if (!dest) return
+    showProgressBar('正在下载… 0 / ' + uniq.length, false)
+    progressUnsub = window.api.onGithubDownloadProgress((p) => updateProgressBar(p.done, p.total))
     const res = await window.api.githubDownloadFiles(currentRepo.owner, currentRepo.repo, uniq, dest)
+    hideProgressBar()
     window.alert('已下载 ' + res.saved + ' 个文件' + (res.skipped ? '（跳过 ' + res.skipped + ' 个，可能超过 100MB 或为 LFS 文件）' : '') + '\n保存到：' + dest)
     selectedFiles.clear()
     selectedDirs.clear()
     void loadFiles()
   } catch (e) {
+    hideProgressBar()
     window.alert('下载失败：' + errMsg(e))
   }
 }
@@ -458,17 +462,6 @@ function copyText(s: string): void {
   navigator.clipboard.writeText(s).catch(() => window.alert('复制失败'))
 }
 
-async function copyFileContent(path: string): Promise<void> {
-  if (!currentRepo) return
-  try {
-    const { file } = await window.api.githubGetContents(currentRepo.owner, currentRepo.repo, path)
-    if (file && file.content) {
-      await navigator.clipboard.writeText(file.content)
-      window.alert('已复制文件内容')
-    } else window.alert('无法复制（空文件或二进制）')
-  } catch (e) { window.alert('复制失败：' + errMsg(e)) }
-}
-
 async function deleteFileAt(n: FileNode): Promise<void> {
   if (!currentRepo) return
   if (!window.confirm('确定删除文件 ' + n.path + ' 吗？')) return
@@ -479,20 +472,6 @@ async function deleteFileAt(n: FileNode): Promise<void> {
     await window.api.githubDeleteFile(currentRepo.owner, currentRepo.repo, n.path, message, file?.sha ?? '')
     void loadFiles()
   } catch (e) { window.alert('删除失败：' + githubErrorHint(e)) }
-}
-
-async function renameFileAt(n: FileNode): Promise<void> {
-  if (!currentRepo) return
-  const newName = window.prompt('新文件名', n.name)
-  if (!newName || !newName.trim() || newName.trim() === n.name) return
-  const newPath = joinRepoPath(parentPath(n.path), newName.trim())
-  try {
-    const { file } = await window.api.githubGetContents(currentRepo.owner, currentRepo.repo, n.path)
-    if (!file) { window.alert('无法读取原文件'); return }
-    await window.api.githubSaveFile(currentRepo.owner, currentRepo.repo, newPath, file.content, 'Rename to ' + newPath)
-    await window.api.githubDeleteFile(currentRepo.owner, currentRepo.repo, n.path, 'Rename from ' + n.path, file.sha)
-    void loadFiles()
-  } catch (e) { window.alert('重命名失败：' + githubErrorHint(e)) }
 }
 
 function fileContextItems(n: FileNode): { label: string; onClick: () => void }[] {
@@ -507,10 +486,8 @@ function fileContextItems(n: FileNode): { label: string; onClick: () => void }[]
     items.push({ label: '在 IDE 中打开', onClick: () => void openInIde(n.path) })
     items.push({ label: '复制名称', onClick: () => copyText(n.name) })
     items.push({ label: '复制路径', onClick: () => copyText(n.path) })
-    items.push({ label: '复制内容', onClick: () => void copyFileContent(n.path) })
     items.push({ label: '下载', onClick: () => void downloadFile(n.path) })
     if (canPush) {
-      items.push({ label: '重命名', onClick: () => void renameFileAt(n) })
       items.push({ label: '删除', onClick: () => void deleteFileAt(n) })
     }
   }
@@ -564,15 +541,50 @@ function pickAndUpload(): void {
   input.click()
 }
 
+let progressUnsub: (() => void) | null = null
+
+function showProgressBar(label: string, indeterminate: boolean): void {
+  hideProgressBar()
+  const overlay = h('div', 'gh-progress-overlay')
+  overlay.id = 'gh-progress'
+  const box = h('div', 'gh-progress-box')
+  const lbl = h('div', 'gh-progress-label', label)
+  lbl.id = 'gh-progress-label'
+  box.appendChild(lbl)
+  const wrap = h('div', 'gh-progress-bar')
+  const fill = h('div', 'gh-progress-fill' + (indeterminate ? ' indeterminate' : ''))
+  fill.id = 'gh-progress-fill'
+  wrap.appendChild(fill)
+  box.appendChild(wrap)
+  overlay.appendChild(box)
+  document.body.appendChild(overlay)
+}
+
+function updateProgressBar(done: number, total: number): void {
+  const lbl = document.getElementById('gh-progress-label')
+  const fill = document.getElementById('gh-progress-fill')
+  if (lbl) lbl.textContent = '正在下载… ' + done + ' / ' + total
+  if (fill) fill.style.width = (total > 0 ? Math.round((done / total) * 100) : 0) + '%'
+}
+
+function hideProgressBar(): void {
+  progressUnsub?.()
+  progressUnsub = null
+  document.getElementById('gh-progress')?.remove()
+}
+
 async function downloadFile(path: string): Promise<void> {
   if (!currentRepo) return
   const name = fileNameOf(path)
   try {
     const dest = await window.api.githubPickSavePath(name)
     if (!dest) return
+    showProgressBar('正在下载 ' + name + ' …', true)
     await window.api.githubDownloadFile(currentRepo.owner, currentRepo.repo, path, dest)
+    hideProgressBar()
     window.alert('已保存到：' + dest)
   } catch (e) {
+    hideProgressBar()
     window.alert('下载失败：' + errMsg(e))
   }
 }
