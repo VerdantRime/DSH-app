@@ -1,6 +1,7 @@
 import type {
   RepoSummary,
   FileContent,
+  FileNode,
   IssueSummary,
   IssueDetail,
   PullSummary,
@@ -357,6 +358,10 @@ async function loadFiles(): Promise<void> {
           void openInIde(n.path)
         }
       })
+      row.addEventListener('contextmenu', (e) => {
+        e.preventDefault()
+        showContextMenu(e.clientX, e.clientY, fileContextItems(n))
+      })
       content.appendChild(row)
     }
   } catch (e) {
@@ -420,6 +425,96 @@ async function cloneRepoInto(): Promise<void> {
   } catch (e) {
     window.alert('克隆失败：' + errMsg(e))
   }
+}
+
+let ctxMenu: HTMLElement | null = null
+
+function hideContextMenu(): void {
+  ctxMenu?.remove()
+  ctxMenu = null
+}
+
+function showContextMenu(x: number, y: number, items: { label: string; onClick: () => void }[]): void {
+  hideContextMenu()
+  const menu = h('div', 'gh-ctx-menu')
+  for (const it of items) {
+    const b = h('button', 'gh-ctx-item', it.label)
+    b.addEventListener('click', () => { hideContextMenu(); it.onClick() })
+    menu.appendChild(b)
+  }
+  menu.style.left = x + 'px'
+  menu.style.top = y + 'px'
+  document.body.appendChild(menu)
+  ctxMenu = menu
+  setTimeout(() => document.addEventListener('mousedown', onDocDown, { once: true }), 0)
+}
+
+function onDocDown(e: MouseEvent): void {
+  if (ctxMenu && !ctxMenu.contains(e.target as Node)) hideContextMenu()
+  else setTimeout(() => document.addEventListener('mousedown', onDocDown, { once: true }), 0)
+}
+
+function copyText(s: string): void {
+  navigator.clipboard.writeText(s).catch(() => window.alert('复制失败'))
+}
+
+async function copyFileContent(path: string): Promise<void> {
+  if (!currentRepo) return
+  try {
+    const { file } = await window.api.githubGetContents(currentRepo.owner, currentRepo.repo, path)
+    if (file && file.content) {
+      await navigator.clipboard.writeText(file.content)
+      window.alert('已复制文件内容')
+    } else window.alert('无法复制（空文件或二进制）')
+  } catch (e) { window.alert('复制失败：' + errMsg(e)) }
+}
+
+async function deleteFileAt(n: FileNode): Promise<void> {
+  if (!currentRepo) return
+  if (!window.confirm('确定删除文件 ' + n.path + ' 吗？')) return
+  const message = window.prompt('提交说明（commit message）', 'Delete ' + n.path)
+  if (message === null) return
+  try {
+    const { file } = await window.api.githubGetContents(currentRepo.owner, currentRepo.repo, n.path)
+    await window.api.githubDeleteFile(currentRepo.owner, currentRepo.repo, n.path, message, file?.sha ?? '')
+    void loadFiles()
+  } catch (e) { window.alert('删除失败：' + githubErrorHint(e)) }
+}
+
+async function renameFileAt(n: FileNode): Promise<void> {
+  if (!currentRepo) return
+  const newName = window.prompt('新文件名', n.name)
+  if (!newName || !newName.trim() || newName.trim() === n.name) return
+  const newPath = joinRepoPath(parentPath(n.path), newName.trim())
+  try {
+    const { file } = await window.api.githubGetContents(currentRepo.owner, currentRepo.repo, n.path)
+    if (!file) { window.alert('无法读取原文件'); return }
+    await window.api.githubSaveFile(currentRepo.owner, currentRepo.repo, newPath, file.content, 'Rename to ' + newPath)
+    await window.api.githubDeleteFile(currentRepo.owner, currentRepo.repo, n.path, 'Rename from ' + n.path, file.sha)
+    void loadFiles()
+  } catch (e) { window.alert('重命名失败：' + githubErrorHint(e)) }
+}
+
+function fileContextItems(n: FileNode): { label: string; onClick: () => void }[] {
+  const items: { label: string; onClick: () => void }[] = []
+  if (n.type === 'dir') {
+    items.push({ label: '打开', onClick: () => { filePath = n.path; void loadFiles() } })
+    if (canPush) {
+      items.push({ label: '上传文件到该目录', onClick: () => { filePath = n.path; pickAndUpload() } })
+      items.push({ label: '新建文件到该目录', onClick: () => { filePath = n.path; createFile() } })
+    }
+  } else {
+    items.push({ label: '在 IDE 中打开', onClick: () => void openInIde(n.path) })
+    items.push({ label: '复制名称', onClick: () => copyText(n.name) })
+    items.push({ label: '复制路径', onClick: () => copyText(n.path) })
+    items.push({ label: '复制内容', onClick: () => void copyFileContent(n.path) })
+    items.push({ label: '下载', onClick: () => void downloadFile(n.path) })
+    if (canPush) {
+      items.push({ label: '重命名', onClick: () => void renameFileAt(n) })
+      items.push({ label: '删除', onClick: () => void deleteFileAt(n) })
+    }
+  }
+  return items
 }
 
 async function openInIde(path: string): Promise<void> {
