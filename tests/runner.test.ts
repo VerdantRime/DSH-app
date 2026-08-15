@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { promises as fs } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
-import { toolPath, projectSources, javaMainClass, decodeOutput, buildBatchScript, run, type RunResult } from '../src/main/runner'
+import { toolPath, projectSources, javaMainClass, decodeOutput, buildBatchScript, isLinkError, run, type RunResult } from '../src/main/runner'
 import { isInteractiveSource, defaultRunFileName } from '../src/renderer/ide-utils'
 
 describe('runner 纯函数', () => {
@@ -36,6 +36,12 @@ describe('runner 纯函数', () => {
     expect(bat).toContain('pause')
   })
 
+  it('isLinkError 识别未定义引用链接错误', () => {
+    expect(isLinkError('undefined reference to `add(int, int)\'')).toBe(true)
+    expect(isLinkError('collect2: ld returned 1 exit status')).toBe(true)
+    expect(isLinkError("error: expected ')' before '*' token")).toBe(false)
+  })
+
   it('decodeOutput 正确解码 UTF-8 与 GBK（中文不乱码）', () => {
     expect(decodeOutput(Buffer.from('hello', 'utf-8'))).toBe('hello')
     expect(decodeOutput(Buffer.from('中文输出', 'utf-8'))).toBe('中文输出')
@@ -67,9 +73,19 @@ describe('runner 真实编译运行（依赖本机工具链）', () => {
     const dir = await fs.mkdtemp(join(tmpdir(), 'run-py-'))
     const f = join(dir, 'main.py')
     await fs.writeFile(f, 'print("hello-py")\n')
-    const res: RunResult = run({ language: 'python', targetPath: f, multiFile: false, interactive: false })
+    const res: RunResult = run({ language: 'python', targetPath: f, interactive: false })
     expect(res.ok).toBe(true)
     expect(res.output).toContain('hello-py')
+    await fs.rm(dir, { recursive: true, force: true })
+  }, 30000)
+
+  it('多文件项目：单文件链接失败后自动整目录编译并运行', async () => {
+    const dir = await fs.mkdtemp(join(tmpdir(), 'run-multi-'))
+    await fs.writeFile(join(dir, 'util.cpp'), 'int add(int a, int b) { return a + b; }\n')
+    await fs.writeFile(join(dir, 'main.cpp'), '#include <cstdio>\nint add(int, int);\nint main() { printf("%d\\n", add(2, 3)); return 0; }\n')
+    const res: RunResult = run({ language: 'cpp', targetPath: join(dir, 'main.cpp'), interactive: false })
+    expect(res.ok).toBe(true)
+    expect(res.output).toContain('5')
     await fs.rm(dir, { recursive: true, force: true })
   }, 30000)
 
@@ -77,7 +93,7 @@ describe('runner 真实编译运行（依赖本机工具链）', () => {
     const dir = await fs.mkdtemp(join(tmpdir(), 'run-c-'))
     const f = join(dir, 'main.c')
     await fs.writeFile(f, '#include <stdio.h>\nint main(){ printf("hello-c\\n"); return 0; }\n')
-    const res: RunResult = run({ language: 'cpp', targetPath: f, multiFile: false, interactive: false })
+    const res: RunResult = run({ language: 'cpp', targetPath: f, interactive: false })
     expect(res.ok).toBe(true)
     expect(res.output).toContain('hello-c')
     await fs.rm(dir, { recursive: true, force: true })

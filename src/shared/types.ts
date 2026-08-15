@@ -89,7 +89,7 @@ export interface ReadmeContent {
 export interface ToolInfo { found: boolean; version: string; command: string }
 export interface ToolchainReport { python: ToolInfo; gcc: ToolInfo; gpp: ToolInfo; java: ToolInfo }
 
-export interface IdeRunRequest { language: 'python' | 'cpp' | 'java'; targetPath: string; multiFile: boolean; interactive: boolean }
+export interface IdeRunRequest { language: 'python' | 'cpp' | 'java'; targetPath: string; interactive: boolean }
 export interface IdeRunResult { ok: boolean; output: string; exitCode: number | null; interactive: boolean }
 
 export interface IssueSummary {

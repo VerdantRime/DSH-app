@@ -7,7 +7,7 @@ import * as iconv from 'iconv-lite'
 export type RunLanguage = 'python' | 'cpp' | 'java'
 
 export interface ToolPaths { python?: string; gpp?: string; javac?: string; java?: string }
-export interface RunRequest { language: RunLanguage; targetPath: string; multiFile: boolean; interactive: boolean; tools?: ToolPaths }
+export interface RunRequest { language: RunLanguage; targetPath: string; interactive: boolean; tools?: ToolPaths }
 export interface RunResult { ok: boolean; output: string; exitCode: number | null; interactive: boolean }
 
 /** 解析工具路径：配置为空用 PATH 默认名；配置为目录则拼接工具名；为 .exe 直接用。 */
@@ -26,6 +26,11 @@ export function projectSources(targetPath: string): string[] {
   } catch {
     return [targetPath]
   }
+}
+
+/** 判断编译输出是否为“未定义引用”这类链接错误（多文件项目特征）。 */
+export function isLinkError(output: string): boolean {
+  return /undefined reference|undefined symbol|ld returned/i.test(output)
 }
 
 /** 从 Java 源文件名推导主类名。 */
@@ -92,9 +97,13 @@ function runPython(req: RunRequest): RunResult {
 function runCpp(req: RunRequest): RunResult {
   const gpp = toolPath(req.tools?.gpp, 'g++.exe')
   const dir = dirname(req.targetPath)
-  const files = req.multiFile ? projectSources(req.targetPath) : [req.targetPath]
   const exe = join(dir, basename(req.targetPath).replace(/\.[^.]+$/, '') + '.exe')
-  const compile = runCapture(gpp, [...files, '-o', exe], dir, 60000)
+  // 先只编译当前文件；出现“未定义引用”（多文件项目）时，再把同目录源文件一起编译重试
+  let compile = runCapture(gpp, [req.targetPath, '-o', exe], dir, 60000)
+  if (compile.code !== 0 && isLinkError(compile.out)) {
+    const files = projectSources(req.targetPath)
+    if (files.length > 1) compile = runCapture(gpp, [...files, '-o', exe], dir, 60000)
+  }
   if (compile.code !== 0) {
     return { ok: false, output: compile.out, exitCode: compile.code, interactive: false }
   }

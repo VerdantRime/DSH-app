@@ -34,7 +34,6 @@ let activeId = 0
 let nextTabId = 1
 let treeRoot: string | null = null
 let treeDir = ''
-let projectMode = false
 let lastAiCode: string | null = null
 let lastAiRange: monaco.Range | null = null
 const AI_MODELS: { id: string; label: string }[] = [
@@ -458,9 +457,8 @@ async function runActive(): Promise<void> {
       targetPath = await window.api.ideRunTemp(defaultRunFileName(lang))
     }
     await window.api.ideWriteFile(targetPath, content)
-    const multiFile = projectMode && treeRoot !== null && targetPath.startsWith(treeRoot)
     showOutput('运行中…')
-    const res: IdeRunResult = await window.api.ideRun({ language: lang, targetPath, multiFile, interactive })
+    const res: IdeRunResult = await window.api.ideRun({ language: lang, targetPath, interactive })
     if (res.interactive) showOutput('已在新控制台窗口中运行（交互式程序）')
     else showOutput((res.output || '(无输出)') + (res.exitCode !== null ? '\n[退出码 ' + res.exitCode + ']' : ''))
   } catch (e) {
@@ -487,15 +485,6 @@ function buildDom(): void {
   const runBtn = h('button', 'btn', '运行')
   runBtn.addEventListener('click', () => void runActive())
   toolbar.appendChild(runBtn)
-  const projLabel = document.createElement('label')
-  projLabel.className = 'ide-proj-label'
-  const projCb = document.createElement('input')
-  projCb.type = 'checkbox'
-  projCb.checked = projectMode
-  projCb.addEventListener('change', () => { projectMode = projCb.checked })
-  projLabel.appendChild(projCb)
-  projLabel.appendChild(h('span', '', '项目编译'))
-  toolbar.appendChild(projLabel)
   const dlG = h('button', 'btn', '下载') as HTMLButtonElement
   dlG.id = 'ide-gh-download'
   dlG.addEventListener('click', () => void downloadGithubActive())
