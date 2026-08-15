@@ -1,5 +1,5 @@
 import monaco from './monaco-setup'
-import { languageForFile, tabTitleFromPath, isInteractiveSource, usesConsoleApis, defaultRunFileName, extractCodeBlock, githubTabKey, buildChatPrompt, canApplyAi, clamp, type ChatTurn, type IdeLanguage } from './ide-utils'
+import { languageForFile, tabTitleFromPath, isInteractiveSource, usesConsoleApis, defaultRunFileName, extractCodeBlock, githubTabKey, buildChatPrompt, canApplyAi, clamp, diffHunks, applyHunks, type ChatTurn, type IdeLanguage } from './ide-utils'
 import { diffLines } from 'diff'
 import { githubErrorHint } from './github-utils'
 import { showContextMenu, copyText, type CtxMenuItem } from './context-menu'
@@ -545,14 +545,93 @@ function applyAiCode(): void {
   const tab = activeTab()
   if (!tab || lastAiCode == null || !editor) return
   const oldText = lastAiRange ? tab.model.getValueInRange(lastAiRange) : tab.model.getValue()
-  openApplyDiff(oldText, lastAiCode, () => {
-    const range = lastAiRange ?? tab.model.getFullModelRange()
-    editor!.executeEdits('ai-apply', [{ range, text: lastAiCode! }])
+  startInlineReview(oldText, lastAiCode, lastAiRange)
+}
+
+function applyRange(text: string, targetRange: monaco.Range | null): void {
+  const model = activeTab()?.model
+  const ed = editor
+  if (!model || !ed) return
+  const range = targetRange ?? model.getFullModelRange()
+  ed.executeEdits('ai-inline', [{ range, text }])
+}
+
+function closeInlineReview(): void {
+  document.getElementById('ide-inline-review')?.remove()
+}
+
+function startInlineReview(oldText: string, newText: string, targetRange: monaco.Range | null): void {
+  closeInlineReview()
+  const model = activeTab()?.model
+  const ed = editor
+  if (!model || !ed) return
+  const hunks = diffHunks(oldText, newText)
+  if (hunks.length === 0) { flashStatus('AI 返回的代码与当前一致，无需修改'); return }
+  const accepted = hunks.map(() => false)
+  const decided = hunks.map(() => false)
+  let decoIds: string[] = []
+  const base = targetRange ? targetRange.startLineNumber - 1 : 0
+  const drawDecos = (): void => {
+    const ds: monaco.editor.IModelDeltaDecoration[] = []
+    hunks.forEach((h, i) => {
+      if (decided[i] || h.oldCount === 0) return
+      ds.push({ range: new monaco.Range(base + h.oldStart + 1, 1, base + h.oldStart + h.oldCount, 1), options: { isWholeLine: true, className: 'ide-inline-removed' } })
+    })
+    decoIds = model.deltaDecorations(decoIds, ds)
+  }
+  drawDecos()
+
+  const panel = h('div', 'ide-inline-review')
+  panel.id = 'ide-inline-review'
+  const head = h('div', 'ide-inline-head')
+  head.appendChild(h('span', '', '审查 AI 修改'))
+  const acceptAll = h('button', 'btn primary', '全部接受')
+  acceptAll.addEventListener('click', () => {
+    model.deltaDecorations(decoIds, [])
+    applyRange(applyHunks(oldText, hunks, hunks.map(() => true)), targetRange)
+    closeInlineReview()
     lastAiCode = null
     lastAiRange = null
     aiApplyEl().classList.add('hidden')
-    flashStatus('已应用，可按 Ctrl+Z 或「撤销」撤回')
+    flashStatus('已全部应用，可 Ctrl+Z 撤回')
   })
+  head.appendChild(acceptAll)
+  const closeBtn = h('button', 'ide-inline-close', '×')
+  closeBtn.addEventListener('click', () => { model.deltaDecorations(decoIds, []); closeInlineReview() })
+  head.appendChild(closeBtn)
+  panel.appendChild(head)
+
+  const list = h('div', 'ide-inline-list')
+  hunks.forEach((hk, i) => {
+    const row = h('div', 'ide-inline-hunk')
+    const preview = document.createElement('pre')
+    preview.className = 'ide-inline-preview'
+    const oldSeg = oldText.split('\n').slice(hk.oldStart, hk.oldStart + hk.oldCount)
+    for (const l of oldSeg) { const d = document.createElement('div'); d.className = 'ide-diff-del'; d.textContent = '- ' + l; preview.appendChild(d) }
+    for (const l of hk.newLines) { const d = document.createElement('div'); d.className = 'ide-diff-add'; d.textContent = '+ ' + l; preview.appendChild(d) }
+    row.appendChild(preview)
+    const btns = h('div', 'ide-inline-btns')
+    const apply = h('button', 'btn', '应用')
+    apply.addEventListener('click', () => {
+      accepted[i] = true
+      decided[i] = true
+      model.deltaDecorations(decoIds, [])
+      applyRange(applyHunks(oldText, hunks, accepted), targetRange)
+      row.classList.add('ide-inline-done')
+    })
+    const ignore = h('button', 'btn', '忽略')
+    ignore.addEventListener('click', () => {
+      decided[i] = true
+      row.classList.add('ide-inline-done')
+      drawDecos()
+    })
+    btns.appendChild(apply)
+    btns.appendChild(ignore)
+    row.appendChild(btns)
+    list.appendChild(row)
+  })
+  panel.appendChild(list)
+  document.getElementById('ide-editor-wrap')?.appendChild(panel)
 }
 
 function undoAiEdit(): void {

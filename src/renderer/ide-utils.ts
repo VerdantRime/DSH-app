@@ -2,6 +2,55 @@ export function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value))
 }
 
+import { diffArrays } from 'diff'
+
+export interface DiffHunk {
+  oldStart: number
+  oldCount: number
+  newLines: string[]
+}
+
+/** 计算新旧文本之间的连续改动块（行级）。 */
+export function diffHunks(oldText: string, newText: string): DiffHunk[] {
+  const oldLines = oldText.split('\n')
+  const newLines = newText.split('\n')
+  const parts = diffArrays(oldLines, newLines)
+  const hunks: DiffHunk[] = []
+  let oldIdx = 0
+  let i = 0
+  while (i < parts.length) {
+    const p = parts[i]
+    if (p.added || p.removed) {
+      const hunk: DiffHunk = { oldStart: oldIdx, oldCount: 0, newLines: [] }
+      while (i < parts.length && (parts[i].added || parts[i].removed)) {
+        const q = parts[i]
+        if (q.removed) { hunk.oldCount += q.value.length; oldIdx += q.value.length }
+        if (q.added) hunk.newLines.push(...q.value)
+        i++
+      }
+      hunks.push(hunk)
+    } else {
+      oldIdx += p.value.length
+      i++
+    }
+  }
+  return hunks
+}
+
+/** 把 accepted 为 true 的改动块应用到旧文本（自底向上，避免行号漂移）。 */
+export function applyHunks(oldText: string, hunks: DiffHunk[], accepted: boolean[]): string {
+  const lines = oldText.split('\n')
+  const order = hunks
+    .map((_, i) => i)
+    .filter((i) => accepted[i])
+    .sort((a, b) => hunks[b].oldStart - hunks[a].oldStart)
+  for (const idx of order) {
+    const h = hunks[idx]
+    lines.splice(h.oldStart, h.oldCount, ...h.newLines)
+  }
+  return lines.join('\n')
+}
+
 export type IdeLanguage =
   | 'python' | 'cpp' | 'java' | 'javascript' | 'typescript' | 'json' | 'markdown' | 'html' | 'css' | 'plaintext'
 

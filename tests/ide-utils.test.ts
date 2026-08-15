@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { languageForFile, tabTitleFromPath, githubTabKey, canApplyAi, clamp } from '../src/renderer/ide-utils'
+import { languageForFile, tabTitleFromPath, githubTabKey, canApplyAi, clamp, diffHunks, applyHunks } from '../src/renderer/ide-utils'
 
 describe('IDE 语言识别', () => {
   it('按扩展名识别语言', () => {
@@ -20,6 +20,18 @@ describe('IDE 语言识别', () => {
   it('大小写不敏感', () => {
     expect(languageForFile('MAIN.PY')).toBe('python')
     expect(languageForFile('A.CPP')).toBe('cpp')
+  })
+
+  it('diffHunks 识别修改/删除/插入块', () => {
+    expect(diffHunks('a\nb\nc', 'a\nx\nc')).toEqual([{ oldStart: 1, oldCount: 1, newLines: ['x'] }])
+    expect(diffHunks('a\nb\nc', 'a\nc')).toEqual([{ oldStart: 1, oldCount: 1, newLines: [] }])
+    expect(diffHunks('a\nc', 'a\nb\nc')).toEqual([{ oldStart: 1, oldCount: 0, newLines: ['b'] }])
+  })
+
+  it('applyHunks 只应用 accepted 的块', () => {
+    const hunks = diffHunks('a\nb\nc', 'a\nx\ny\nc')
+    expect(applyHunks('a\nb\nc', hunks, [true])).toBe('a\nx\ny\nc')
+    expect(applyHunks('a\nb\nc', hunks, [false])).toBe('a\nb\nc')
   })
 
   it('clamp 限制数值范围', () => {
