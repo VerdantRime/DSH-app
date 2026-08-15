@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parentPath, fileNameOf, joinRepoPath, validateNewFileName, breadcrumbSegments, formatFileSize, isMarkdownFile, githubErrorHint, isSafeRepoPath, fileTypeInfo } from '../src/renderer/github-utils'
+import { parentPath, fileNameOf, joinRepoPath, validateNewFileName, breadcrumbSegments, formatFileSize, isMarkdownFile, githubErrorHint, isSafeRepoPath, fileTypeInfo, linkAction } from '../src/renderer/github-utils'
 
 describe('github-utils 路径工具', () => {
   it('parentPath 返回上级目录', () => {
@@ -26,6 +26,15 @@ describe('github-utils 路径工具', () => {
       { label: 'a', path: 'docs/a' },
       { label: 'b', path: 'docs/a/b' }
     ])
+  })
+
+  it('linkAction 分类链接（外链/锚点/相对文件/危险协议）', () => {
+    expect(linkAction('https://github.com/a', '')).toEqual({ kind: 'external', value: 'https://github.com/a' })
+    expect(linkAction('#section', '')).toEqual({ kind: 'anchor', value: 'section' })
+    expect(linkAction('javascript:alert(1)', '')).toEqual({ kind: 'none', value: '' })
+    expect(linkAction('docs/README.md', 'src')).toEqual({ kind: 'repoFile', value: 'src/docs/README.md' })
+    expect(linkAction('../README.md', 'src/renderer')).toEqual({ kind: 'repoFile', value: 'src/README.md' })
+    expect(linkAction('img/pic.png#x', '')).toEqual({ kind: 'repoFile', value: 'img/pic.png' })
   })
 
   it('fileTypeInfo 按扩展名归类并给代表色', () => {

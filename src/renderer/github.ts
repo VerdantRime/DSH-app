@@ -11,7 +11,7 @@ import type {
 import { FOLDER_ICON, FILE_ICON, GITHUB_ICON } from './icons'
 import DOMPurify from 'dompurify'
 import { renderMarkdown } from './markdown'
-import { parentPath, fileNameOf, joinRepoPath, validateNewFileName, breadcrumbSegments, formatFileSize, isMarkdownFile, githubErrorHint, isSafeRepoPath, fileTypeInfo } from './github-utils'
+import { parentPath, fileNameOf, joinRepoPath, validateNewFileName, breadcrumbSegments, formatFileSize, isMarkdownFile, githubErrorHint, isSafeRepoPath, fileTypeInfo, linkAction } from './github-utils'
 import { GITHUB_TOKEN_URL, TOKEN_HELP_STEPS } from './github-help'
 
 type ListMode = 'mine' | 'starred' | 'search'
@@ -526,6 +526,7 @@ async function loadFileContent(path: string): Promise<void> {
         }
         bar.appendChild(srcBtn)
         content.appendChild(body)
+        attachRepoLinks(body, parentPath(path))
         refresh()
       } else {
         content.appendChild(h('pre', 'gh-code', file.content))
@@ -565,6 +566,24 @@ function renderEditor(path: string, initialContent?: string, sha?: string, after
   submitBtn.classList.add('primary')
   row.appendChild(btn('取消', done))
   content.appendChild(row)
+}
+
+// 拦截渲染 Markdown 中的链接：外部链接用系统浏览器打开，相对链接在应用内打开文件，避免整窗跳转白屏。
+function attachRepoLinks(container: HTMLElement, baseDir: string): void {
+  container.addEventListener('click', (e) => {
+    const a = (e.target as HTMLElement | null)?.closest?.('a')
+    if (!a) return
+    const act = linkAction(a.getAttribute('href') ?? '', baseDir)
+    if (act.kind === 'none') return
+    e.preventDefault()
+    if (act.kind === 'external') {
+      void window.api.openExternal(act.value)
+    } else if (act.kind === 'anchor' && act.value) {
+      document.getElementById(act.value)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    } else if (act.kind === 'repoFile' && act.value) {
+      void loadFileContent(act.value)
+    }
+  })
 }
 
 // Issues
@@ -746,7 +765,7 @@ async function loadReadme(): Promise<void> {
 }
 
 /** 网页预览/源码 双视图的 Markdown 渲染器（README 与 .md 文件共用）。 */
-function renderMarkdownView(name: string, markdown: string): HTMLElement {
+function renderMarkdownView(name: string, markdown: string, baseDir = ''): HTMLElement {
   const box = h('div', 'gh-readme-wrap')
   const bar = h('div', 'gh-tabs')
   bar.appendChild(h('span', 'gh-crumb', name))
@@ -757,6 +776,7 @@ function renderMarkdownView(name: string, markdown: string): HTMLElement {
   box.appendChild(bar)
   const body = h('div', 'gh-readme')
   box.appendChild(body)
+  attachRepoLinks(body, baseDir)
   const html = DOMPurify.sanitize(renderMarkdown(markdown))
   function set(mode: 'preview' | 'raw'): void {
     previewBtn.classList.toggle('active', mode === 'preview')

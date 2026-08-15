@@ -72,6 +72,27 @@ export function fileTypeInfo(name: string): FileTypeInfo {
   return { label: ext ? ext.toUpperCase().slice(0, 4) : 'TXT', color: '#8B949E' }
 }
 
+export interface LinkAction { kind: 'external' | 'anchor' | 'repoFile' | 'none'; value: string }
+
+/** 对渲染 Markdown 里的链接分类，避免整窗跳转导致白屏。 */
+export function linkAction(href: string, currentDir: string): LinkAction {
+  const h = (href || '').trim()
+  if (!h) return { kind: 'none', value: '' }
+  if (/^(javascript|data|vbscript):/i.test(h)) return { kind: 'none', value: '' }
+  if (/^(https?:|mailto:|ftp:)/i.test(h)) return { kind: 'external', value: h }
+  if (h.startsWith('#')) return { kind: 'anchor', value: h.slice(1) }
+  const hashIdx = h.indexOf('#')
+  const clean = hashIdx >= 0 ? h.slice(0, hashIdx) : h
+  if (!clean) return { kind: 'anchor', value: hashIdx >= 0 ? h.slice(hashIdx + 1) : '' }
+  const base = currentDir ? currentDir + '/' : ''
+  const stack: string[] = []
+  for (const p of (base + clean).replace(/\/+/g, '/').split('/')) {
+    if (p === '..') stack.pop()
+    else if (p && p !== '.') stack.push(p)
+  }
+  return { kind: 'repoFile', value: stack.join('/') }
+}
+
 export function isMarkdownFile(name: string): boolean {
   return /\.(md|markdown|mdown|mkd)$/i.test(name)
 }

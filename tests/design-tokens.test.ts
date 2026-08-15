@@ -52,6 +52,12 @@ describe('设计令牌（依据 awesome-design-md 规范）', () => {
     expect(gh).not.toContain('🐙')
   })
 
+  it('渲染 Markdown 链接被拦截打开（防白屏）', () => {
+    expect(gh).toContain('attachRepoLinks')
+    expect(gh).toContain('preventDefault')
+    expect(gh).toContain('openExternal')
+  })
+
   it('文件类型徽章与文件夹图标色已区分', () => {
     expect(base).toContain('.gh-file-ext')
     expect(base).toContain('.gh-file-icon.dir')
