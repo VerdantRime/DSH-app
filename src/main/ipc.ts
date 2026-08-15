@@ -1,5 +1,6 @@
 import { app, dialog, ipcMain, shell, type BrowserWindow } from 'electron'
 import { IPC } from '../shared/types'
+import { translateMarkdown } from './translate'
 import type { ConfigStore } from './store'
 import type { HarnessManager } from './harness-manager'
 import type { GithubService } from './github-service'
@@ -25,6 +26,7 @@ export function registerIpc(deps: IpcDeps): void {
   // 系统
   ipcMain.handle(IPC.appGetVersion, () => app.getVersion())
   ipcMain.handle(IPC.appOpenExternal, (_e, url: string) => shell.openExternal(url))
+  ipcMain.handle(IPC.appTranslate, (_e, text: string) => translateMarkdown(text))
   ipcMain.handle(IPC.appShowWindow, () => deps.getWindow()?.show())
   ipcMain.handle(IPC.appQuitReal, () => deps.quit())
   // harness

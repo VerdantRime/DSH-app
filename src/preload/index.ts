@@ -45,6 +45,7 @@ const api: WorkdeskApi = {
   backupCreate: (destPath) => ipcRenderer.invoke(IPC.backupCreate, destPath),
   backupRestore: (srcPath) => ipcRenderer.invoke(IPC.backupRestore, srcPath),
   openExternal: (url) => ipcRenderer.invoke(IPC.appOpenExternal, url),
+  translate: (text) => ipcRenderer.invoke(IPC.appTranslate, text),
   quitReal: () => ipcRenderer.invoke(IPC.appQuitReal),
   showWindow: () => ipcRenderer.invoke(IPC.appShowWindow),
   onNavigate: (cb) => subscribe<string>(IPC.appNavigate, cb),

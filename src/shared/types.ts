@@ -182,6 +182,7 @@ export const IPC = {
   backupCreate: 'backup:create',
   backupRestore: 'backup:restore',
   appOpenExternal: 'app:openExternal',
+  appTranslate: 'app:translate',
   appQuitReal: 'app:quitReal',
   appShowWindow: 'app:showWindow',
   appNavigate: 'app:navigate',
@@ -225,6 +226,7 @@ export interface WorkdeskApi {
   backupCreate(destPath?: string): Promise<{ path: string }>
   backupRestore(srcPath: string): Promise<{ ok: boolean }>
   openExternal(url: string): Promise<void>
+  translate(text: string): Promise<string>
   quitReal(): Promise<void>
   showWindow(): Promise<void>
   onNavigate(cb: (panelId: string) => void): () => void

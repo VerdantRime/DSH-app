@@ -769,26 +769,57 @@ function renderMarkdownView(name: string, markdown: string, baseDir = ''): HTMLE
   const box = h('div', 'gh-readme-wrap')
   const bar = h('div', 'gh-tabs')
   bar.appendChild(h('span', 'gh-crumb', name))
-  const previewBtn = btn('网页预览', () => set('preview'))
-  const rawBtn = btn('源码', () => set('raw'))
+  let mode: 'preview' | 'raw' = 'preview'
+  const previewBtn = btn('网页预览', () => { mode = 'preview'; refreshView() })
+  const rawBtn = btn('源码', () => { mode = 'raw'; refreshView() })
+  const translateBtn = btn('翻译', () => void toggleTranslate())
   bar.appendChild(previewBtn)
   bar.appendChild(rawBtn)
+  bar.appendChild(translateBtn)
   box.appendChild(bar)
   const body = h('div', 'gh-readme')
   box.appendChild(body)
   attachRepoLinks(body, baseDir)
-  const html = DOMPurify.sanitize(renderMarkdown(markdown))
-  function set(mode: 'preview' | 'raw'): void {
-    previewBtn.classList.toggle('active', mode === 'preview')
-    rawBtn.classList.toggle('active', mode === 'raw')
-    if (mode === 'preview') {
-      body.className = 'gh-readme'
-      body.innerHTML = html
-    } else {
+  const htmlOriginal = DOMPurify.sanitize(renderMarkdown(markdown))
+  let translatedHtml: string | null = null
+  let translating = false
+  let showTranslated = false
+  function refreshView(): void {
+    const raw = mode === 'raw'
+    const showT = showTranslated && translatedHtml != null
+    previewBtn.classList.toggle('active', !raw)
+    rawBtn.classList.toggle('active', raw)
+    translateBtn.classList.toggle('active', showT)
+    if (raw) {
       body.className = 'gh-code'
       body.textContent = markdown
+    } else {
+      body.className = 'gh-readme'
+      body.innerHTML = showT ? translatedHtml! : htmlOriginal
     }
   }
-  set('preview')
+  function toggleTranslate(): void {
+    showTranslated = !showTranslated
+    refreshView()
+    if (!showTranslated || translatedHtml != null || translating) return
+    translating = true
+    translateBtn.textContent = '翻译中…'
+    window.api
+      .translate(markdown)
+      .then((t) => {
+        translatedHtml = DOMPurify.sanitize(renderMarkdown(t))
+        translating = false
+        translateBtn.textContent = '翻译'
+        refreshView()
+      })
+      .catch((e) => {
+        translating = false
+        showTranslated = false
+        translateBtn.textContent = '翻译'
+        window.alert('翻译失败：' + (e instanceof Error ? e.message : String(e)))
+        refreshView()
+      })
+  }
+  refreshView()
   return box
 }
