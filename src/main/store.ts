@@ -11,6 +11,7 @@ export function defaultConfig(): AppConfig {
     sidebarCollapsed: false,
     closeToTray: true,
     wallpaper: 'random',
+    wallpaperCustomPath: '',
     github: { apiBaseUrl: 'https://api.github.com', allowInsecureTls: false },
     ide: { pythonPath: '', gccPath: '', javaPath: '', layout: { treeWidth: 200, aiWidth: 320, outputHeight: 160 } },
     harness: { port: 3080, dataDir: join(homedir(), '.dsh') },

@@ -17,6 +17,7 @@ export interface AppConfig {
   sidebarCollapsed: boolean
   closeToTray: boolean
   wallpaper: string
+  wallpaperCustomPath: string
   github: {
     apiBaseUrl: string
     allowInsecureTls: boolean
@@ -209,6 +210,8 @@ export const IPC = {
   ideWriteFile: 'ide:writeFile',
   ideDeleteFile: 'ide:deleteFile',
   ideRenameFile: 'ide:renameFile',
+  idePickImage: 'ide:pickImage',
+  ideSaveCustomWallpaper: 'ide:saveCustomWallpaper',
   ideDetectTools: 'ide:detectTools',
   ideRun: 'ide:run',
   ideRunTemp: 'ide:runTemp',
@@ -271,6 +274,8 @@ export interface WorkdeskApi {
   ideWriteFile(path: string, content: string, encoding?: 'utf-8' | 'gbk'): Promise<void>
   ideDeleteFile(path: string): Promise<void>
   ideRenameFile(oldPath: string, newName: string): Promise<{ newPath: string }>
+  idePickImage(): Promise<string | null>
+  ideSaveCustomWallpaper(src: string): Promise<string>
   ideDetectTools(): Promise<ToolchainReport>
   ideRun(req: IdeRunRequest): Promise<IdeRunResult>
   ideRunTemp(fileName: string): Promise<string>

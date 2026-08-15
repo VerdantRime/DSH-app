@@ -5,7 +5,8 @@ import { listDirEntries, readFileWithPath, writeTextFile, deleteFile, renameFile
 import { detectToolchains } from './toolchain'
 import { run } from './runner'
 import { tmpdir } from 'os'
-import { join } from 'path'
+import { join, extname } from 'path'
+import { promises as fs } from 'fs'
 import type { IdeRunRequest } from '../shared/types'
 import { askWithModel, buildPromptTask, listModels } from './ai'
 import { cloneRepo, repoNameFromUrl, validateCloneUrl } from './clone'
@@ -59,6 +60,18 @@ export function registerIpc(deps: IpcDeps): void {
   ipcMain.handle(IPC.ideWriteFile, (_e, p: string, c: string, enc?: 'utf-8' | 'gbk') => writeTextFile(p, c, enc))
   ipcMain.handle(IPC.ideDeleteFile, (_e, p: string) => deleteFile(p))
   ipcMain.handle(IPC.ideRenameFile, async (_e, o: string, n: string) => ({ newPath: await renameFile(o, n) }))
+  ipcMain.handle(IPC.idePickImage, async () => {
+    const win = deps.getWindow()
+    const opts: Electron.OpenDialogOptions = { properties: ['openFile'], filters: [{ name: '图片', extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp'] }] }
+    const res = win ? await dialog.showOpenDialog(win, opts) : await dialog.showOpenDialog(opts)
+    return res.canceled ? null : res.filePaths?.[0] ?? null
+  })
+  ipcMain.handle(IPC.ideSaveCustomWallpaper, async (_e, src: string) => {
+    const ext = (extname(src) || '.png').toLowerCase()
+    const dest = join(app.getPath('userData'), 'custom-wallpaper' + ext)
+    await fs.copyFile(src, dest)
+    return dest
+  })
   ipcMain.handle(IPC.ideDetectTools, () => detectToolchains())
   ipcMain.handle(IPC.ideRun, (_e, req: IdeRunRequest) => {
     const ide = deps.store.get().ide

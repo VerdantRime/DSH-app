@@ -16,7 +16,9 @@ export function applyWallpaper(mode: ThemeMode, wallpaperId: string): void {
   const dark = window.matchMedia('(prefers-color-scheme: dark)').matches
   let url: string | null = null
   if (resolveTheme(mode, dark) === 'anime' && wallpaperId !== 'none') {
-    if (wallpaperId === 'random') {
+    if (wallpaperId === 'custom' && cfg?.wallpaperCustomPath) {
+      url = 'file:///' + cfg.wallpaperCustomPath.replace(/\\/g, '/')
+    } else if (wallpaperId === 'random') {
       if (!randomWallpaper) randomWallpaper = resolveWallpaper('random')
       url = randomWallpaper
     } else {
@@ -75,6 +77,23 @@ function render(): void {
   panel.appendChild(renderAbout())
 }
 
+async function pickCustomWallpaper(wpSel: HTMLSelectElement): Promise<void> {
+  if (!cfg) return
+  try {
+    const src = await window.api.idePickImage()
+    if (!src) { wpSel.value = cfg.wallpaper; return }
+    const dest = await window.api.ideSaveCustomWallpaper(src)
+    cfg.wallpaper = 'custom'
+    cfg.wallpaperCustomPath = dest
+    await window.api.configSet({ wallpaper: 'custom', wallpaperCustomPath: dest })
+    wpSel.value = 'custom'
+    applyWallpaper(cfg.theme, 'custom')
+  } catch (e) {
+    window.alert('上传背景失败：' + (e instanceof Error ? e.message : String(e)))
+    wpSel.value = cfg.wallpaper
+  }
+}
+
 function renderGeneral(): HTMLElement {
   const s = section('通用')
   const themeRow = h('div', 'set-row')
@@ -101,17 +120,24 @@ function renderGeneral(): HTMLElement {
   const wpOpts: { id: string; label: string }[] = [
     { id: 'none', label: '无壁纸（纯色渐变）' },
     { id: 'random', label: '随机' },
-    ...WALLPAPERS.map((w) => ({ id: w.id, label: w.label }))
+    ...WALLPAPERS.map((w) => ({ id: w.id, label: w.label })),
+    { id: 'custom', label: '自定义（上传图片）' }
   ]
   for (const o of wpOpts) { const e = document.createElement('option'); e.value = o.id; e.textContent = o.label; wpSel.appendChild(e) }
   wpSel.value = cfg?.wallpaper ?? 'random'
   wpSel.addEventListener('change', () => {
     if (!cfg) return
+    if (wpSel.value === 'custom') {
+      void pickCustomWallpaper(wpSel)
+      return
+    }
     cfg.wallpaper = wpSel.value
     void window.api.configSet({ wallpaper: wpSel.value })
     applyWallpaper(cfg.theme, wpSel.value)
   })
   wpRow.appendChild(wpSel)
+  const upBtn = btn('上传图片', () => void pickCustomWallpaper(wpSel))
+  wpRow.appendChild(upBtn)
   s.appendChild(wpRow)
   s.appendChild(h('div', 'set-note', '仅「二次元」主题生效'))
 
