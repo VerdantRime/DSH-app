@@ -1,3 +1,4 @@
+import './monaco-zh'
 import * as monaco from 'monaco-editor'
 import editorWorker from 'monaco-editor/editor/editor.worker?worker'
 import jsonWorker from 'monaco-editor/language/json/json.worker?worker'
