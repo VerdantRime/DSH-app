@@ -308,6 +308,18 @@ async function loadFileContent(path: string): Promise<void> {
         void loadFiles()
       }))
       bar.appendChild(btn('编辑', () => renderEditor(path)))
+      bar.appendChild(btn('删除', () => {
+        if (!window.confirm('确定删除文件 ' + path + ' 吗？此操作会产生一次删除提交。')) return
+        const message = window.prompt('提交说明（commit message）', 'Delete ' + path)
+        if (message === null) return
+        void window.api
+          .githubDeleteFile(currentRepo!.owner, currentRepo!.repo, path, message, currentFileSha)
+          .then(() => {
+            filePath = parentPath(path)
+            void loadFiles()
+          })
+          .catch((e) => window.alert('删除失败：' + errMsg(e)))
+      }))
       content.appendChild(bar)
       content.appendChild(h('pre', 'gh-code', file.content))
     } else {

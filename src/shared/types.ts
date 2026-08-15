@@ -155,6 +155,7 @@ export const IPC = {
   githubGetRepo: 'github:getRepo',
   githubGetContents: 'github:getContents',
   githubSaveFile: 'github:saveFile',
+  githubDeleteFile: 'github:deleteFile',
   githubListIssues: 'github:listIssues',
   githubGetIssue: 'github:getIssue',
   githubListPulls: 'github:listPulls',
@@ -192,6 +193,7 @@ export interface WorkdeskApi {
   githubGetRepo(owner: string, repo: string): Promise<RepoDetail>
   githubGetContents(owner: string, repo: string, path?: string): Promise<{ tree: FileNode[]; file: FileContent | null }>
   githubSaveFile(owner: string, repo: string, path: string, content: string, message: string, sha?: string): Promise<void>
+  githubDeleteFile(owner: string, repo: string, path: string, message: string, sha: string): Promise<void>
   githubListIssues(owner: string, repo: string, state: 'open' | 'closed'): Promise<IssueSummary[]>
   githubGetIssue(owner: string, repo: string, number: number): Promise<IssueDetail>
   githubListPulls(owner: string, repo: string, state: 'open' | 'closed'): Promise<PullSummary[]>

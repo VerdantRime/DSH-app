@@ -112,6 +112,14 @@ describe('GithubClient 端点', () => {
     expect(out.map((n) => n.name)).toEqual(['Bob', 'apple', 'Zebra'])
   })
 
+  it('deleteFile 携带 sha 与 message 调用 API', async () => {
+    let captured: any = null
+    const fake = { rest: { repos: { deleteFile: async (args: any) => { captured = args } } } }
+    const c = new GithubClient('tok', { octokit: fake as any })
+    await c.deleteFile('o', 'r', 'docs/a.md', '删除文件', 'sha9')
+    expect(captured).toEqual({ owner: 'o', repo: 'r', path: 'docs/a.md', message: '删除文件', sha: 'sha9' })
+  })
+
   it('validateGithubInput 校验 token 与地址', () => {
     expect(validateGithubInput('ghp_abc123', 'https://api.github.com')).toBeNull()
     expect(validateGithubInput('你好', 'https://api.github.com')).toContain('非 ASCII')

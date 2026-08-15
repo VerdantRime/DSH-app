@@ -25,6 +25,7 @@ function fakeClient(overrides: Partial<IGithubClient> = {}): IGithubClient {
     listCommits: async () => [],
     getCommit: async () => ({ sha: '', message: '', author: '', date: '', files: [] }),
     createOrUpdateFile: async () => {},
+    deleteFile: async () => {},
     ...overrides
   }
 }
@@ -51,6 +52,17 @@ describe('GithubService', () => {
     const creds = new CredentialsStore(join(dir, 'github.json'), cipher)
     const svc = new GithubService(creds, () => fakeClient())
     await expect(svc.listRepos('mine')).rejects.toThrow('NOT_CONFIGURED')
+  })
+
+  it('deleteFile 透传参数到客户端', async () => {
+    const calls: any[] = []
+    const creds = new CredentialsStore(join(dir, 'github.json'), cipher)
+    const svc = new GithubService(creds, () => fakeClient({
+      deleteFile: async (...args: any[]) => { calls.push(args) }
+    }))
+    await svc.setToken('tok')
+    await svc.deleteFile('o', 'r', 'a.txt', '删除', 'sha')
+    expect(calls).toEqual([['o', 'r', 'a.txt', '删除', 'sha']])
   })
 
   it('clearToken 清空并复位状态', async () => {

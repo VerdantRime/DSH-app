@@ -110,4 +110,8 @@ export class GithubService {
   ): Promise<void> {
     await (await this.getClient()).createOrUpdateFile(owner, repo, path, content, message, sha)
   }
+
+  async deleteFile(owner: string, repo: string, path: string, message: string, sha: string): Promise<void> {
+    await (await this.getClient()).deleteFile(owner, repo, path, message, sha)
+  }
 }

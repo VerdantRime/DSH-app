@@ -136,6 +136,7 @@ export interface IGithubClient {
   listCommits(owner: string, repo: string): Promise<CommitSummary[]>
   getCommit(owner: string, repo: string, sha: string): Promise<CommitDetail>
   createOrUpdateFile(owner: string, repo: string, path: string, content: string, message: string, sha?: string): Promise<void>
+  deleteFile(owner: string, repo: string, path: string, message: string, sha: string): Promise<void>
 }
 
 export const DEFAULT_GITHUB_API = 'https://api.github.com'
@@ -265,5 +266,9 @@ export class GithubClient implements IGithubClient {
     }
     if (sha) payload.sha = sha
     await this.octokit.rest.repos.createOrUpdateFileContents(payload as any)
+  }
+
+  async deleteFile(owner: string, repo: string, path: string, message: string, sha: string): Promise<void> {
+    await this.octokit.rest.repos.deleteFile({ owner, repo, path, message, sha })
   }
 }
