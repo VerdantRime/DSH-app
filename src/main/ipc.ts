@@ -2,6 +2,7 @@ import { app, dialog, ipcMain, shell, type BrowserWindow } from 'electron'
 import { IPC } from '../shared/types'
 import { translateMarkdown } from './translate'
 import { listDirEntries, readTextFile, writeTextFile } from './ide-files'
+import { detectToolchains } from './toolchain'
 import type { ConfigStore } from './store'
 import type { HarnessManager } from './harness-manager'
 import type { GithubService } from './github-service'
@@ -50,6 +51,7 @@ export function registerIpc(deps: IpcDeps): void {
   ipcMain.handle(IPC.ideReadFile, (_e, p: string) => readTextFile(p))
   ipcMain.handle(IPC.ideListDir, (_e, p: string) => listDirEntries(p))
   ipcMain.handle(IPC.ideWriteFile, (_e, p: string, c: string) => writeTextFile(p, c))
+  ipcMain.handle(IPC.ideDetectTools, () => detectToolchains())
   ipcMain.handle(IPC.appShowWindow, () => deps.getWindow()?.show())
   ipcMain.handle(IPC.appQuitReal, () => deps.quit())
   // harness

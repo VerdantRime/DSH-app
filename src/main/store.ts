@@ -11,6 +11,7 @@ export function defaultConfig(): AppConfig {
     sidebarCollapsed: false,
     closeToTray: true,
     github: { apiBaseUrl: 'https://api.github.com', allowInsecureTls: false },
+    ide: { pythonPath: '', gccPath: '', javaPath: '' },
     harness: { port: 3080, dataDir: join(homedir(), '.dsh') },
     windowBounds: { x: 0, y: 0, width: 1200, height: 800, maximized: false }
   }

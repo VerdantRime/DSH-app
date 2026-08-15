@@ -1,6 +1,6 @@
 import { resolveTheme, themeLabel } from './theme'
 import { GITHUB_TOKEN_URL, TOKEN_HELP_STEPS } from './github-help'
-import type { AppConfig, ThemeMode, GithubStatus } from '../shared/types'
+import type { AppConfig, ThemeMode, GithubStatus, ToolchainReport } from '../shared/types'
 
 let cfg: AppConfig | null = null
 
@@ -45,6 +45,7 @@ function render(): void {
   if (!panel) return
   panel.replaceChildren()
   panel.appendChild(renderGeneral())
+  panel.appendChild(renderIde())
   panel.appendChild(renderGithub())
   panel.appendChild(renderHarness())
   panel.appendChild(renderAbout())
@@ -90,6 +91,54 @@ function renderGeneral(): HTMLElement {
   closeRow.appendChild(cc)
   s.appendChild(closeRow)
   return s
+}
+
+function renderIde(): HTMLElement {
+  const s = section('IDE 工具链')
+  const statusEl = h('div', 'set-note', '检测中…')
+  statusEl.id = 'ide-tools-status'
+  s.appendChild(statusEl)
+
+  const mkInput = (id: string, label: string, ph: string): HTMLElement => {
+    const row = h('div', 'set-row')
+    row.appendChild(h('span', 'set-label', label))
+    const input = document.createElement('input')
+    input.className = 'gh-search'
+    input.placeholder = ph
+    input.id = id
+    row.appendChild(input)
+    row.appendChild(btn('保存路径', () => {
+      const v = input.value.trim()
+      void window.api.configSet({ ide: { pythonPath: id === 'ide-python-path' ? v : cfg?.ide.pythonPath ?? '', gccPath: id === 'ide-gcc-path' ? v : cfg?.ide.gccPath ?? '', javaPath: id === 'ide-java-path' ? v : cfg?.ide.javaPath ?? '' } })
+    }))
+    return row
+  }
+
+  s.appendChild(mkInput('ide-python-path', 'Python', '留空自动检测，如 C:\\...\\python.exe'))
+  s.appendChild(mkInput('ide-gcc-path', 'GCC(g++)', '留空自动检测，如 C:\\...\\mingw64\\bin'))
+  s.appendChild(mkInput('ide-java-path', 'JDK(javac)', '留空自动检测，如 C:\\...\\jdk-21\\bin'))
+  s.appendChild(btn('重新检测', () => void refreshToolchain()))
+  void refreshToolchain()
+  return s
+}
+
+function toolStatus(t: { found: boolean; version: string }): string {
+  return t.found ? '已检测 ✓ 版本 ' + t.version : '未检测到'
+}
+
+async function refreshToolchain(): Promise<void> {
+  const el = document.getElementById('ide-tools-status')
+  if (!el) return
+  el.textContent = '检测中…'
+  try {
+    const r: ToolchainReport = await window.api.ideDetectTools()
+    el.textContent = ''
+    el.appendChild(h('div', '', 'Python：' + toolStatus(r.python)))
+    el.appendChild(h('div', '', 'C/C++（GCC）：' + toolStatus(r.gcc)))
+    el.appendChild(h('div', '', 'Java：' + toolStatus(r.java) + (r.java.found ? '' : '（未检测到 JDK，Java 暂不可用）')))
+  } catch (e) {
+    el.textContent = '检测失败：' + (e instanceof Error ? e.message : String(e))
+  }
 }
 
 function renderGithub(): HTMLElement {

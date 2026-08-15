@@ -24,6 +24,11 @@ export interface AppConfig {
     port: number
     dataDir: string
   }
+  ide: {
+    pythonPath: string
+    gccPath: string
+    javaPath: string
+  }
   windowBounds: WindowBounds
 }
 
@@ -80,6 +85,9 @@ export interface ReadmeContent {
   path: string
   content: string
 }
+
+export interface ToolInfo { found: boolean; version: string; command: string }
+export interface ToolchainReport { python: ToolInfo; gcc: ToolInfo; gpp: ToolInfo; java: ToolInfo }
 
 export interface IssueSummary {
   number: number
@@ -189,6 +197,7 @@ export const IPC = {
   ideReadFile: 'ide:readFile',
   ideListDir: 'ide:listDir',
   ideWriteFile: 'ide:writeFile',
+  ideDetectTools: 'ide:detectTools',
   appQuitReal: 'app:quitReal',
   appShowWindow: 'app:showWindow',
   appNavigate: 'app:navigate',
@@ -239,6 +248,7 @@ export interface WorkdeskApi {
   ideReadFile(path: string): Promise<{ path: string; content: string }>
   ideListDir(path: string): Promise<{ name: string; path: string; type: 'file' | 'dir' }[]>
   ideWriteFile(path: string, content: string): Promise<void>
+  ideDetectTools(): Promise<ToolchainReport>
   quitReal(): Promise<void>
   showWindow(): Promise<void>
   onNavigate(cb: (panelId: string) => void): () => void
