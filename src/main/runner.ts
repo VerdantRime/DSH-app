@@ -1,5 +1,6 @@
 import { spawn, spawnSync } from 'child_process'
-import { readdirSync } from 'fs'
+import { readdirSync, writeFileSync, mkdirSync } from 'fs'
+import { tmpdir } from 'os'
 import { join, dirname, basename } from 'path'
 
 export type RunLanguage = 'python' | 'cpp' | 'java'
@@ -53,9 +54,21 @@ function runCapture(cmd: string, args: string[], cwd: string, timeoutMs = 30000)
   return { code: r.status, out: decodeOutput(r.stdout) + decodeOutput(r.stderr) }
 }
 
+/** 生成交互式运行的批处理内容（在新控制台窗口执行并停留）。 */
+export function buildBatchScript(cmdline: string): string {
+  return '@echo off\r\n' + cmdline + '\r\necho.\r\necho [按任意键关闭]\r\npause >nul\r\n'
+}
+
+/** 用 start + 批处理可靠地弹出独立控制台窗口（GUI 应用需新建控制台）。 */
 function consoleRun(cmdline: string): void {
-  const child = spawn('cmd.exe', ['/k', cmdline], { detached: true, stdio: 'ignore', windowsHide: false })
-  child.unref()
+  try {
+    const bat = join(tmpdir(), 'dsh-ide', 'run-' + Date.now() + '.bat')
+    mkdirSync(dirname(bat), { recursive: true })
+    writeFileSync(bat, buildBatchScript(cmdline))
+    spawn('cmd.exe', ['/c', 'start', '', bat], { detached: true, stdio: 'ignore', windowsHide: false }).unref()
+  } catch {
+    spawn('cmd.exe', ['/c', 'start', '', 'cmd.exe', '/k', cmdline], { detached: true, stdio: 'ignore', windowsHide: false }).unref()
+  }
 }
 
 function runPython(req: RunRequest): RunResult {

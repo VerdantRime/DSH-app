@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { promises as fs } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
-import { toolPath, projectSources, javaMainClass, decodeOutput, run, type RunResult } from '../src/main/runner'
+import { toolPath, projectSources, javaMainClass, decodeOutput, buildBatchScript, run, type RunResult } from '../src/main/runner'
 import { isInteractiveSource, defaultRunFileName } from '../src/renderer/ide-utils'
 
 describe('runner 纯函数', () => {
@@ -26,6 +26,13 @@ describe('runner 纯函数', () => {
 
   it('javaMainClass 去掉扩展名', () => {
     expect(javaMainClass('C:\\x\\Main.java')).toBe('Main')
+  })
+
+  it('buildBatchScript 包含命令与暂停', () => {
+    const bat = buildBatchScript('"C:\\x\\a.exe"')
+    expect(bat).toContain('@echo off')
+    expect(bat).toContain('"C:\\x\\a.exe"')
+    expect(bat).toContain('pause')
   })
 
   it('decodeOutput 正确解码 UTF-8 与 GBK（中文不乱码）', () => {

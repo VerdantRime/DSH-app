@@ -34,6 +34,7 @@ let activeId = 0
 let nextTabId = 1
 let treeRoot: string | null = null
 let treeDir = ''
+let projectMode = false
 let lastAiCode: string | null = null
 let lastAiRange: monaco.Range | null = null
 
@@ -452,7 +453,7 @@ async function runActive(): Promise<void> {
       targetPath = await window.api.ideRunTemp(defaultRunFileName(lang))
     }
     await window.api.ideWriteFile(targetPath, content)
-    const multiFile = treeRoot !== null && targetPath.startsWith(treeRoot)
+    const multiFile = projectMode && treeRoot !== null && targetPath.startsWith(treeRoot)
     showOutput('运行中…')
     const res: IdeRunResult = await window.api.ideRun({ language: lang, targetPath, multiFile, interactive })
     if (res.interactive) showOutput('已在新控制台窗口中运行（交互式程序）')
@@ -481,6 +482,15 @@ function buildDom(): void {
   const runBtn = h('button', 'btn', '运行')
   runBtn.addEventListener('click', () => void runActive())
   toolbar.appendChild(runBtn)
+  const projLabel = document.createElement('label')
+  projLabel.className = 'ide-proj-label'
+  const projCb = document.createElement('input')
+  projCb.type = 'checkbox'
+  projCb.checked = projectMode
+  projCb.addEventListener('change', () => { projectMode = projCb.checked })
+  projLabel.appendChild(projCb)
+  projLabel.appendChild(h('span', '', '项目编译'))
+  toolbar.appendChild(projLabel)
   const aiBtn = (label: string, action: 'explain' | 'debug' | 'optimize'): HTMLElement => {
     const b = h('button', 'btn', label)
     b.addEventListener('click', () => void aiAsk(action))
