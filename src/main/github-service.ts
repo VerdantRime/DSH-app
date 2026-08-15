@@ -131,4 +131,8 @@ export class GithubService {
     const buf = await (await this.getClient()).getRawFile(owner, repo, path)
     await fs.writeFile(destPath, buf)
   }
+
+  async getReadme(owner: string, repo: string): Promise<import('../shared/types').ReadmeContent | null> {
+    return (await this.getClient()).getReadme(owner, repo)
+  }
 }

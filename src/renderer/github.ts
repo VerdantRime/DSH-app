@@ -8,6 +8,8 @@ import type {
   CommitSummary,
   CommitDetail
 } from '../shared/types'
+import DOMPurify from 'dompurify'
+import { renderMarkdown } from './markdown'
 import { GITHUB_TOKEN_URL, TOKEN_HELP_STEPS } from './github-help'
 
 type ListMode = 'mine' | 'starred' | 'search'
@@ -568,19 +570,50 @@ async function openCommit(sha: string): Promise<void> {
   }
 }
 
-// README
+// README（网页渲染）
 async function loadReadme(): Promise<void> {
   const content = document.getElementById('gh-content')
   if (!content || !currentRepo) return
   clear(content)
   content.appendChild(h('div', 'gh-loading', '加载中…'))
   try {
-    const { file } = await window.api.githubGetContents(currentRepo.owner, currentRepo.repo, 'README.md')
+    const readme = await window.api.githubGetReadme(currentRepo.owner, currentRepo.repo)
     clear(content)
-    if (file) content.appendChild(h('pre', 'gh-code', file.content))
-    else content.appendChild(h('div', 'gh-empty', '无 README.md'))
-  } catch {
+    if (!readme) {
+      content.appendChild(h('div', 'gh-empty', '该仓库没有 README'))
+      return
+    }
+    content.appendChild(renderMarkdownView(readme.name, readme.content))
+  } catch (e) {
     clear(content)
-    content.appendChild(h('div', 'gh-empty', '无 README.md'))
+    content.appendChild(h('div', 'gh-error', '加载失败：' + errMsg(e)))
   }
+}
+
+/** 网页预览/源码 双视图的 Markdown 渲染器（README 与 .md 文件共用）。 */
+function renderMarkdownView(name: string, markdown: string): HTMLElement {
+  const box = h('div', 'gh-readme-wrap')
+  const bar = h('div', 'gh-tabs')
+  bar.appendChild(h('span', 'gh-crumb', '📖 ' + name))
+  const previewBtn = btn('网页预览', () => set('preview'))
+  const rawBtn = btn('源码', () => set('raw'))
+  bar.appendChild(previewBtn)
+  bar.appendChild(rawBtn)
+  box.appendChild(bar)
+  const body = h('div', 'gh-readme')
+  box.appendChild(body)
+  const html = DOMPurify.sanitize(renderMarkdown(markdown))
+  function set(mode: 'preview' | 'raw'): void {
+    previewBtn.classList.toggle('active', mode === 'preview')
+    rawBtn.classList.toggle('active', mode === 'raw')
+    if (mode === 'preview') {
+      body.className = 'gh-readme'
+      body.innerHTML = html
+    } else {
+      body.className = 'gh-code'
+      body.textContent = markdown
+    }
+  }
+  set('preview')
+  return box
 }

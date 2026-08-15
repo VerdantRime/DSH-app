@@ -4,6 +4,7 @@ import type {
   RepoDetail,
   FileNode,
   FileContent,
+  ReadmeContent,
   IssueSummary,
   IssueDetail,
   PullSummary,
@@ -139,6 +140,7 @@ export interface IGithubClient {
   deleteFile(owner: string, repo: string, path: string, message: string, sha: string): Promise<void>
   uploadFile(owner: string, repo: string, path: string, contentBase64: string, message: string, sha?: string): Promise<void>
   getRawFile(owner: string, repo: string, path: string): Promise<Buffer>
+  getReadme(owner: string, repo: string): Promise<ReadmeContent | null>
 }
 
 export const DEFAULT_GITHUB_API = 'https://api.github.com'
@@ -278,6 +280,22 @@ export class GithubClient implements IGithubClient {
       throw new Error('无法读取该文件：可能是空文件或超过 1MB 的大小限制')
     }
     return Buffer.from(data.content, 'base64')
+  }
+
+  /** README（任意大小写文件名均可命中），仓库没有 README 时返回 null。 */
+  async getReadme(owner: string, repo: string): Promise<ReadmeContent | null> {
+    try {
+      const res = await this.octokit.rest.repos.getReadme({ owner, repo })
+      const data = res.data as any
+      const content =
+        data && data.encoding === 'base64' && typeof data.content === 'string'
+          ? Buffer.from(data.content, 'base64').toString('utf-8')
+          : ''
+      return { name: data?.name ?? 'README', path: data?.path ?? '', content }
+    } catch (e: any) {
+      if (e?.status === 404) return null
+      throw e
+    }
   }
 
   async deleteFile(owner: string, repo: string, path: string, message: string, sha: string): Promise<void> {

@@ -74,6 +74,12 @@ export interface FileContent {
   sha: string
 }
 
+export interface ReadmeContent {
+  name: string
+  path: string
+  content: string
+}
+
 export interface IssueSummary {
   number: number
   title: string
@@ -159,6 +165,7 @@ export const IPC = {
   githubUploadFile: 'github:uploadFile',
   githubDownloadFile: 'github:downloadFile',
   githubPickSavePath: 'github:pickSavePath',
+  githubGetReadme: 'github:getReadme',
   githubListIssues: 'github:listIssues',
   githubGetIssue: 'github:getIssue',
   githubListPulls: 'github:listPulls',
@@ -200,6 +207,7 @@ export interface WorkdeskApi {
   githubUploadFile(owner: string, repo: string, path: string, contentBase64: string, message: string, sha?: string): Promise<void>
   githubDownloadFile(owner: string, repo: string, path: string, destPath: string): Promise<void>
   githubPickSavePath(defaultName: string): Promise<string | null>
+  githubGetReadme(owner: string, repo: string): Promise<ReadmeContent | null>
   githubListIssues(owner: string, repo: string, state: 'open' | 'closed'): Promise<IssueSummary[]>
   githubGetIssue(owner: string, repo: string, number: number): Promise<IssueDetail>
   githubListPulls(owner: string, repo: string, state: 'open' | 'closed'): Promise<PullSummary[]>

@@ -28,6 +28,7 @@ function fakeClient(overrides: Partial<IGithubClient> = {}): IGithubClient {
     deleteFile: async () => {},
     uploadFile: async () => {},
     getRawFile: async () => Buffer.from('x'),
+    getReadme: async () => null,
     ...overrides
   }
 }

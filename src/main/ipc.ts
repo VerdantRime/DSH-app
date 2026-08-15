@@ -52,6 +52,7 @@ export function registerIpc(deps: IpcDeps): void {
   ipcMain.handle(IPC.githubDeleteFile, (_e, o, r, p, m, s) => deps.github.deleteFile(o, r, p, m, s))
   ipcMain.handle(IPC.githubUploadFile, (_e, o, r, p, c, m, s) => deps.github.uploadFile(o, r, p, c, m, s))
   ipcMain.handle(IPC.githubDownloadFile, (_e, o, r, p, d) => deps.github.downloadFile(o, r, p, d))
+  ipcMain.handle(IPC.githubGetReadme, (_e, o, r) => deps.github.getReadme(o, r))
   ipcMain.handle(IPC.githubPickSavePath, async (_e, defaultName: string) => {
     const win = deps.getWindow()
     const opts = { defaultPath: defaultName }

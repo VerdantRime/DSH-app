@@ -144,6 +144,20 @@ describe('GithubClient 端点', () => {
     await expect(c.getRawFile('o', 'r', 'big.bin')).rejects.toThrow('1MB')
   })
 
+  it('getReadme 解码 base64 内容', async () => {
+    const fake = { rest: { repos: { getReadme: async () => ({ data: { name: 'README.md', path: 'README.md', encoding: 'base64', content: Buffer.from('# Hi', 'utf-8').toString('base64') } }) } } }
+    const c = new GithubClient('tok', { octokit: fake as any })
+    const r = await c.getReadme('o', 'r')
+    expect(r?.name).toBe('README.md')
+    expect(r?.content).toBe('# Hi')
+  })
+
+  it('getReadme 仓库没有 README 返回 null', async () => {
+    const fake = { rest: { repos: { getReadme: async () => { const e: any = new Error('Not Found'); e.status = 404; throw e } } } }
+    const c = new GithubClient('tok', { octokit: fake as any })
+    expect(await c.getReadme('o', 'r')).toBeNull()
+  })
+
   it('deleteFile 携带 sha 与 message 调用 API', async () => {
     let captured: any = null
     const fake = { rest: { repos: { deleteFile: async (args: any) => { captured = args } } } }
