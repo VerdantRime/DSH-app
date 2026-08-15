@@ -1,12 +1,35 @@
 import { resolveTheme, themeLabel } from './theme'
+import { WALLPAPERS, resolveWallpaper } from './wallpapers'
 import { GITHUB_TOKEN_URL, TOKEN_HELP_STEPS } from './github-help'
 import type { AppConfig, ThemeMode, GithubStatus, ToolchainReport } from '../shared/types'
 
 let cfg: AppConfig | null = null
+let randomWallpaper: string | null = null
 
 export function applyTheme(mode: ThemeMode): void {
   const dark = window.matchMedia('(prefers-color-scheme: dark)').matches
   document.documentElement.dataset.theme = resolveTheme(mode, dark)
+}
+
+export function applyWallpaper(mode: ThemeMode, wallpaperId: string): void {
+  const layer = document.getElementById('wallpaper-layer')
+  const dark = window.matchMedia('(prefers-color-scheme: dark)').matches
+  let url: string | null = null
+  if (resolveTheme(mode, dark) === 'anime' && wallpaperId !== 'none') {
+    if (wallpaperId === 'random') {
+      if (!randomWallpaper) randomWallpaper = resolveWallpaper('random')
+      url = randomWallpaper
+    } else {
+      url = resolveWallpaper(wallpaperId)
+    }
+  }
+  if (url && layer) {
+    document.documentElement.style.setProperty('--wallpaper', 'url("' + url + '")')
+    layer.classList.remove('hidden')
+  } else {
+    document.documentElement.style.setProperty('--wallpaper', 'none')
+    layer?.classList.add('hidden')
+  }
 }
 
 function h(tag: string, className?: string, text?: string): HTMLElement {
@@ -37,6 +60,7 @@ export async function initSettings(): Promise<void> {
     cfg = null
   }
   if (cfg) applyTheme(cfg.theme)
+  if (cfg) applyWallpaper(cfg.theme, cfg.wallpaper)
   render()
 }
 
@@ -61,6 +85,7 @@ function renderGeneral(): HTMLElement {
       if (!cfg) return
       cfg.theme = m
       applyTheme(m)
+      applyWallpaper(m, cfg.wallpaper)
       void window.api.configSet({ theme: m })
       render()
     })
@@ -68,6 +93,27 @@ function renderGeneral(): HTMLElement {
     themeRow.appendChild(b)
   }
   s.appendChild(themeRow)
+
+  const wpRow = h('div', 'set-row')
+  wpRow.appendChild(h('span', 'set-label', '二次元壁纸'))
+  const wpSel = document.createElement('select')
+  wpSel.className = 'gh-search'
+  const wpOpts: { id: string; label: string }[] = [
+    { id: 'none', label: '无壁纸（纯色渐变）' },
+    { id: 'random', label: '随机' },
+    ...WALLPAPERS.map((w) => ({ id: w.id, label: w.label }))
+  ]
+  for (const o of wpOpts) { const e = document.createElement('option'); e.value = o.id; e.textContent = o.label; wpSel.appendChild(e) }
+  wpSel.value = cfg?.wallpaper ?? 'random'
+  wpSel.addEventListener('change', () => {
+    if (!cfg) return
+    cfg.wallpaper = wpSel.value
+    void window.api.configSet({ wallpaper: wpSel.value })
+    applyWallpaper(cfg.theme, wpSel.value)
+  })
+  wpRow.appendChild(wpSel)
+  s.appendChild(wpRow)
+  s.appendChild(h('div', 'set-note', '仅「二次元」主题生效'))
 
   const launchRow = h('div', 'set-row')
   launchRow.appendChild(h('span', 'set-label', '启动时自动启动 harness'))

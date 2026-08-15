@@ -3,6 +3,8 @@
    圆润、亲和、蓝白渐变品牌感；动效只用 transform/opacity。
    ============================================================ */
 * { box-sizing: border-box; }
+.wallpaper-layer { position: fixed; inset: 0; z-index: 0; pointer-events: none; background: var(--wallpaper, none) center / cover no-repeat; opacity: 0.45; }
+.wallpaper-layer.hidden { display: none; }
 :root body { background: linear-gradient(180deg, #F7F9FE 0%, #F2F5FC 100%); }
 html, body { margin: 0; padding: 0; height: 100%; }
 body {

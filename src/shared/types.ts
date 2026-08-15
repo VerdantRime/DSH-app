@@ -16,6 +16,7 @@ export interface AppConfig {
   }
   sidebarCollapsed: boolean
   closeToTray: boolean
+  wallpaper: string
   github: {
     apiBaseUrl: string
     allowInsecureTls: boolean

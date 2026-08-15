@@ -64,6 +64,11 @@ describe('设计令牌（依据 awesome-design-md 规范）', () => {
     expect(base).toContain('--brand-blue')
   })
 
+  it('壁纸层与选择存在', () => {
+    expect(html).toContain('wallpaper-layer')
+    expect(base).toContain('.wallpaper-layer')
+  })
+
   it('二次元主题含星点装饰与糖果按钮', () => {
     expect(base).toContain('radial-gradient(2px 2px at')
     expect(base).toContain('rgba(246, 168, 200, 0.35)')
