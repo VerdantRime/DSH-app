@@ -8,6 +8,7 @@ import { tmpdir } from 'os'
 import { join } from 'path'
 import type { IdeRunRequest } from '../shared/types'
 import { askHeadless, buildAiTask } from './ai'
+import { cloneRepo, repoNameFromUrl, validateCloneUrl } from './clone'
 import type { ConfigStore } from './store'
 import type { HarnessManager } from './harness-manager'
 import type { GithubService } from './github-service'
@@ -106,6 +107,21 @@ export function registerIpc(deps: IpcDeps): void {
   ipcMain.handle(IPC.githubGetReadme, (_e, o, r) => deps.github.getReadme(o, r))
   ipcMain.handle(IPC.githubListTree, (_e, o, r, d) => deps.github.listTreeFiles(o, r, d))
   ipcMain.handle(IPC.githubCommitFiles, (_e, o, r, m, f) => deps.github.commitFiles(o, r, m, f))
+  ipcMain.handle(IPC.gitClone, async (_e, url: string) => {
+    const verr = validateCloneUrl(url)
+    if (verr) return { ok: false, error: verr }
+    const win = deps.getWindow()
+    const opts: Electron.OpenDialogOptions = { properties: ['openDirectory'] }
+    const res = win ? await dialog.showOpenDialog(win, opts) : await dialog.showOpenDialog(opts)
+    if (res.canceled || !res.filePaths[0]) return { ok: false }
+    const dest = join(res.filePaths[0], repoNameFromUrl(url))
+    try {
+      await cloneRepo(url, dest)
+      return { ok: true, dir: dest }
+    } catch (e) {
+      return { ok: false, error: e instanceof Error ? e.message : String(e) }
+    }
+  })
   ipcMain.handle(IPC.githubDownloadFiles, (_e, o, r, p, d) => deps.github.downloadFiles(o, r, p, d))
   ipcMain.handle(IPC.githubPickSaveDir, async () => {
     const win = deps.getWindow()

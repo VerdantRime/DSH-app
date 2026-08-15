@@ -205,6 +205,7 @@ export const IPC = {
   ideRunTemp: 'ide:runTemp',
   aiAsk: 'ai:ask',
   githubCommitFiles: 'github:commitFiles',
+  gitClone: 'git:clone',
   appQuitReal: 'app:quitReal',
   appShowWindow: 'app:showWindow',
   appNavigate: 'app:navigate',
@@ -238,6 +239,7 @@ export interface WorkdeskApi {
   githubGetReadme(owner: string, repo: string): Promise<ReadmeContent | null>
   githubListTree(owner: string, repo: string, dirPath?: string): Promise<string[]>
   githubCommitFiles(owner: string, repo: string, message: string, files: { path: string; content: string }[]): Promise<void>
+  gitClone(url: string): Promise<{ ok: boolean; dir?: string; error?: string }>
   githubDownloadFiles(owner: string, repo: string, paths: string[], destDir: string): Promise<{ saved: number; skipped: number }>
   githubPickSaveDir(): Promise<string | null>
   githubListIssues(owner: string, repo: string, state: 'open' | 'closed'): Promise<IssueSummary[]>

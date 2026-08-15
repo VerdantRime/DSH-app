@@ -43,6 +43,7 @@ const api: WorkdeskApi = {
   githubDownloadFiles: (owner, repo, paths, destDir) => ipcRenderer.invoke(IPC.githubDownloadFiles, owner, repo, paths, destDir),
   githubPickSaveDir: () => ipcRenderer.invoke(IPC.githubPickSaveDir),
   githubCommitFiles: (owner, repo, message, files) => ipcRenderer.invoke(IPC.githubCommitFiles, owner, repo, message, files),
+  gitClone: (url) => ipcRenderer.invoke(IPC.gitClone, url),
   backupCreate: (destPath) => ipcRenderer.invoke(IPC.backupCreate, destPath),
   backupRestore: (srcPath) => ipcRenderer.invoke(IPC.backupRestore, srcPath),
   openExternal: (url) => ipcRenderer.invoke(IPC.appOpenExternal, url),

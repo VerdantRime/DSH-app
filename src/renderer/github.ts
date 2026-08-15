@@ -13,7 +13,7 @@ import DOMPurify from 'dompurify'
 import { renderMarkdown } from './markdown'
 import { parentPath, fileNameOf, joinRepoPath, validateNewFileName, breadcrumbSegments, formatFileSize, isMarkdownFile, githubErrorHint, isSafeRepoPath, fileTypeInfo, linkAction } from './github-utils'
 import { GITHUB_TOKEN_URL, TOKEN_HELP_STEPS } from './github-help'
-import { ideOpenGithubFile } from './ide'
+import { ideOpenGithubFile, ideOpenFolderAt } from './ide'
 
 type ListMode = 'mine' | 'starred' | 'search'
 type Tab = 'files' | 'issues' | 'pulls' | 'commits' | 'readme'
@@ -138,6 +138,7 @@ function renderList(): void {
   }
   const spacer = h('span', 'spacer')
   bar.appendChild(spacer)
+  bar.appendChild(btn('克隆仓库', () => void cloneRepoInto()))
   bar.appendChild(h('span', 'gh-user', username))
   bar.appendChild(btn('登出', () => {
     void window.api.githubClearToken().then(() => boot())
@@ -402,6 +403,22 @@ async function downloadSelected(): Promise<void> {
     void loadFiles()
   } catch (e) {
     window.alert('下载失败：' + errMsg(e))
+  }
+}
+
+async function cloneRepoInto(): Promise<void> {
+  const url = window.prompt('输入要克隆的仓库地址（https:// 或 git@）', '')
+  if (url === null) return
+  try {
+    const res = await window.api.gitClone(url)
+    if (res.ok && res.dir) {
+      ideOpenFolderAt(res.dir)
+      window.alert('克隆完成：' + res.dir)
+    } else if (res.error) {
+      window.alert('克隆失败：' + res.error)
+    }
+  } catch (e) {
+    window.alert('克隆失败：' + errMsg(e))
   }
 }
 

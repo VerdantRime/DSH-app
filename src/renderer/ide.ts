@@ -304,13 +304,19 @@ function parentDir(p: string): string {
 async function openFolder(): Promise<void> {
   const dir = await window.api.ideOpenFolder()
   if (!dir) return
+  ideOpenFolderAt(dir)
+}
+
+/** 直接在 IDE 打开某个目录（克隆仓库后使用）。 */
+export function ideOpenFolderAt(dir: string): void {
   treeRoot = dir
   treeDir = dir
   const tree = document.getElementById('ide-tree')
   tree?.classList.remove('hidden')
   const rootEl = document.getElementById('ide-tree-root')
   if (rootEl) rootEl.textContent = dir
-  await renderTree()
+  void renderTree()
+  document.dispatchEvent(new CustomEvent('dsh:navigate', { detail: 'ide' }))
 }
 
 async function renderTree(): Promise<void> {
