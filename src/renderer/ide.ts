@@ -631,7 +631,9 @@ async function deleteActiveFile(): Promise<void> {
 
 async function renameActiveFile(): Promise<void> {
   const tab = activeTab()
-  if (!tab || tab.github || !tab.path) return
+  if (!tab) return
+  if (tab.github) { window.alert('这是 GitHub 文件，暂不支持在此重命名'); return }
+  if (!tab.path) { window.alert('当前标签尚未保存到磁盘，无法重命名（请先 Ctrl+S 保存）'); return }
   const oldName = tabTitleFromPath(tab.path)
   const newName = window.prompt('新文件名', oldName)
   if (!newName || !newName.trim() || newName.trim() === oldName) return
@@ -647,7 +649,9 @@ async function renameActiveFile(): Promise<void> {
 
 function revealInTree(): void {
   const tab = activeTab()
-  if (!tab || !tab.path || !treeRoot) return
+  if (!tab) return
+  if (!tab.path) { window.alert('当前标签没有本地路径（未保存或 GitHub 文件），无法定位'); return }
+  if (!treeRoot) { window.alert('请先点工具栏「打开文件夹」打开一个项目文件夹，再使用「在文件树中定位」'); return }
   if (!tab.path.startsWith(treeRoot)) { window.alert('当前文件不在已打开的项目文件夹内'); return }
   treeDir = parentDir(tab.path)
   document.getElementById('ide-tree')?.classList.remove('hidden')
