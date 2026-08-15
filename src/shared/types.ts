@@ -204,6 +204,7 @@ export const IPC = {
   ideRun: 'ide:run',
   ideRunTemp: 'ide:runTemp',
   aiAsk: 'ai:ask',
+  aiListModels: 'ai:listModels',
   githubCommitFiles: 'github:commitFiles',
   gitClone: 'git:clone',
   appQuitReal: 'app:quitReal',
@@ -262,6 +263,7 @@ export interface WorkdeskApi {
   ideRun(req: IdeRunRequest): Promise<IdeRunResult>
   ideRunTemp(fileName: string): Promise<string>
   aiAsk(req: { promptPath: string; model?: string }): Promise<{ text: string }>
+  aiListModels(): Promise<{ current: string; models: string[] }>
   quitReal(): Promise<void>
   showWindow(): Promise<void>
   onNavigate(cb: (panelId: string) => void): () => void

@@ -13,6 +13,29 @@ export function buildPromptTask(promptPath: string): string {
 
 export { extractCodeBlock } from '../renderer/ide-utils'
 
+/** DeepSeek 官方 provider 的真实模型清单（来自 dsh-llm-deepseek 的 DEFAULT_MODELS）。 */
+export const DEEPSEEK_MODELS = ['deepseek-v4-flash', 'deepseek-v4-pro']
+
+/** 从 settings.yaml 文本读取当前默认模型名。 */
+export function currentModelOf(yamlText: string): string {
+  try {
+    const doc = load(yamlText) as Record<string, unknown>
+    const am = doc?.['agent-default-model'] as Record<string, unknown> | undefined
+    return (am?.model as string) || 'deepseek-v4-pro'
+  } catch {
+    return 'deepseek-v4-pro'
+  }
+}
+
+/** 真实读取可用模型：内置清单 + 当前模型（若用户自定义过）。 */
+export async function listModels(dshHome: string): Promise<{ current: string; models: string[] }> {
+  const sp = join(dshHome, 'settings.yaml')
+  const text = await readFile(sp, 'utf-8').catch(() => '')
+  const current = currentModelOf(text)
+  const models = [...new Set([...DEEPSEEK_MODELS, current])]
+  return { current, models }
+}
+
 export interface AskOptions { dshHome: string; timeoutMs?: number }
 
 /** 在 settings.yaml 文本里覆盖 agent-default-model.model（保留 provider 与其它字段）。 */

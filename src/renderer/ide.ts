@@ -37,12 +37,6 @@ let treeDir = ''
 let lastAiCode: string | null = null
 let lastAiRange: monaco.Range | null = null
 let aiHistory: ChatTurn[] = []
-const AI_MODELS: { id: string; label: string }[] = [
-  { id: '', label: '默认（跟随 DSH）' },
-  { id: 'deepseek-chat', label: 'DeepSeek V3 (chat)' },
-  { id: 'deepseek-reasoner', label: 'DeepSeek R1 (reasoner)' },
-  { id: 'deepseek-v4-pro', label: 'DeepSeek V4 Pro' }
-]
 let aiModel = ''
 
 function h(tag: string, className?: string, text?: string): HTMLElement {
@@ -489,6 +483,25 @@ async function runActive(): Promise<void> {
   }
 }
 
+async function loadAiModels(): Promise<void> {
+  try {
+    const { current, models } = await window.api.aiListModels()
+    const sel = document.getElementById('ide-ai-model') as HTMLSelectElement | null
+    if (!sel) return
+    sel.replaceChildren()
+    const def = document.createElement('option')
+    def.value = ''
+    def.textContent = '默认（' + current + '）'
+    sel.appendChild(def)
+    for (const m of models) {
+      const o = document.createElement('option')
+      o.value = m
+      o.textContent = m
+      sel.appendChild(o)
+    }
+  } catch { /* 保持空下拉 */ }
+}
+
 function buildDom(): void {
   if (!panel) return
   panel.replaceChildren()
@@ -562,7 +575,6 @@ function buildDom(): void {
   modelSel.id = 'ide-ai-model'
   modelSel.className = 'gh-search'
   modelSel.style.cssText = 'flex:1 1 auto; min-width:0;'
-  for (const m of AI_MODELS) { const o = document.createElement('option'); o.value = m.id; o.textContent = m.label; modelSel.appendChild(o) }
   modelSel.addEventListener('change', () => { aiModel = modelSel.value })
   aiHead.appendChild(modelSel)
   aiPanel.appendChild(aiHead)
@@ -633,4 +645,5 @@ export function initIde(): void {
   switchTab(first.id)
   updateGithubButtons()
   renderAiHistory()
+  void loadAiModels()
 }

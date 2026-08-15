@@ -7,7 +7,7 @@ import { run } from './runner'
 import { tmpdir } from 'os'
 import { join } from 'path'
 import type { IdeRunRequest } from '../shared/types'
-import { askWithModel, buildPromptTask } from './ai'
+import { askWithModel, buildPromptTask, listModels } from './ai'
 import { cloneRepo, repoNameFromUrl, validateCloneUrl } from './clone'
 import type { ConfigStore } from './store'
 import type { HarnessManager } from './harness-manager'
@@ -71,6 +71,7 @@ export function registerIpc(deps: IpcDeps): void {
     })
   })
   ipcMain.handle(IPC.ideRunTemp, (_e, fileName: string) => join(tmpdir(), 'dsh-ide', fileName))
+  ipcMain.handle(IPC.aiListModels, () => listModels(deps.store.get().harness.dataDir))
   ipcMain.handle(IPC.aiAsk, async (_e, req: { promptPath: string; model?: string }) => {
     const task = buildPromptTask(req.promptPath)
     const dshHome = deps.store.get().harness.dataDir
