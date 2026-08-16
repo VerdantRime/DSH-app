@@ -255,6 +255,7 @@ export const IPC = {
   ideRunTemp: 'ide:runTemp',
   aiAsk: 'ai:ask',
   aiListModels: 'ai:listModels',
+  aiChunk: 'ai:chunk',
   githubCommitFiles: 'github:commitFiles',
   githubPickFiles: 'github:pickFiles',
   githubPickFolder: 'github:pickFolder',
@@ -344,8 +345,9 @@ export interface WorkdeskApi {
   ideRun(req: IdeRunRequest): Promise<IdeRunResult>
   ideCompile(req: { language: 'python' | 'cpp' | 'java'; targetPath: string }): Promise<{ ok: boolean; output: string; exitCode: number | null }>
   ideRunTemp(fileName: string): Promise<string>
-  aiAsk(req: { promptPath: string; model?: string }): Promise<{ text: string }>
+  aiAsk(req: { promptPath: string; model?: string; requestId?: string }): Promise<{ text: string }>
   aiListModels(): Promise<{ current: string; models: string[] }>
+  onAiChunk(cb: (p: { requestId: string; chunk: string }) => void): () => void
   quitReal(): Promise<void>
   showWindow(): Promise<void>
   onNavigate(cb: (panelId: string) => void): () => void

@@ -47,20 +47,20 @@ export function withModel(yamlText: string, model: string): string {
 }
 
 /** 带模型切换的一次询问：临时改写 settings.yaml 后运行，finally 恢复原样。 */
-export async function askWithModel(task: string, opts: AskOptions & { model?: string }): Promise<string> {
-  if (!opts.model) return askHeadless(task, opts)
+export async function askWithModel(task: string, opts: AskOptions & { model?: string }, onChunk?: (chunk: string) => void): Promise<string> {
+  if (!opts.model) return askHeadless(task, opts, onChunk)
   const sp = join(opts.dshHome, 'settings.yaml')
   const original = await readFile(sp, 'utf-8').catch(() => null)
   try {
     if (original !== null) await writeFile(sp, withModel(original, opts.model), 'utf-8')
-    return await askHeadless(task, opts)
+    return await askHeadless(task, opts, onChunk)
   } finally {
     if (original !== null) await writeFile(sp, original, 'utf-8').catch(() => {})
   }
 }
 
 /** 调起 dsh --profile headless 极简智能体，返回最后一条 assistant 文本。 */
-export function askHeadless(task: string, opts: AskOptions): Promise<string> {
+export function askHeadless(task: string, opts: AskOptions, onChunk?: (chunk: string) => void): Promise<string> {
   return new Promise((resolve, reject) => {
     const child = spawn('npx.cmd', ['@deepseek-ai/dsh', '--profile', 'headless', task], {
       shell: true,
@@ -73,7 +73,11 @@ export function askHeadless(task: string, opts: AskOptions): Promise<string> {
       try { child.kill('SIGKILL') } catch { /* noop */ }
       reject(new Error('AI 调用超时，请稍后重试'))
     }, opts.timeoutMs ?? 180000)
-    child.stdout?.on('data', (d) => { out += d })
+    child.stdout?.on('data', (d) => {
+      const s = String(d)
+      out += s
+      onChunk?.(s)
+    })
     child.stderr?.on('data', (d) => { err += d })
     child.on('error', (e) => { clearTimeout(timer); reject(e) })
     child.on('close', (code) => {

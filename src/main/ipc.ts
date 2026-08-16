@@ -98,10 +98,12 @@ export function registerIpc(deps: IpcDeps): void {
     return compile({ ...req, interactive: false, tools: { python: ide.pythonPath || undefined, gpp: ide.gccPath || undefined, javac: ide.javaPath || undefined, java: ide.javaPath || undefined } })
   })
   ipcMain.handle(IPC.aiListModels, () => listModels(deps.store.get().harness.dataDir))
-  ipcMain.handle(IPC.aiAsk, async (_e, req: { promptPath: string; model?: string }) => {
+  ipcMain.handle(IPC.aiAsk, async (_e, req: { promptPath: string; model?: string; requestId?: string }) => {
     const task = buildPromptTask(req.promptPath)
     const dshHome = deps.store.get().harness.dataDir
-    const text = await askWithModel(task, { dshHome, model: req.model })
+    const text = await askWithModel(task, { dshHome, model: req.model }, (chunk) => {
+      deps.getWindow()?.webContents.send(IPC.aiChunk, { requestId: req.requestId ?? '', chunk })
+    })
     return { text }
   })
   ipcMain.handle(IPC.appShowWindow, () => deps.getWindow()?.show())

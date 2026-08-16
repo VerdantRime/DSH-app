@@ -75,6 +75,7 @@ const api: WorkdeskApi = {
   ideRunTemp: (fileName) => ipcRenderer.invoke(IPC.ideRunTemp, fileName),
   aiAsk: (req) => ipcRenderer.invoke(IPC.aiAsk, req),
   aiListModels: () => ipcRenderer.invoke(IPC.aiListModels),
+  onAiChunk: (cb) => subscribe<{ requestId: string; chunk: string }>(IPC.aiChunk, cb),
   quitReal: () => ipcRenderer.invoke(IPC.appQuitReal),
   quitRequest: () => ipcRenderer.invoke(IPC.appQuitRequest),
   hideToTray: () => ipcRenderer.invoke(IPC.appHideToTray),

@@ -140,6 +140,7 @@ body.ide-resizing { user-select: none; cursor: col-resize; }
 .ide-ai-msg.ide-ai-assistant { align-self: flex-start; background: var(--card-bg); border: 1px solid var(--border); }
 .ide-ai-msg pre { max-width: 100%; overflow-x: auto; white-space: pre-wrap; word-break: break-word; margin: 6px 0; padding: 8px 10px; background: var(--sidebar-bg); border: 1px solid var(--border); border-radius: var(--radius-md); font-family: Consolas, monospace; font-size: 12px; line-height: 1.5; }
 .ide-ai-msg pre code { background: none; padding: 0; white-space: inherit; word-break: inherit; font-size: inherit; }
+.ide-ai-streaming { margin: 0; white-space: pre-wrap; word-break: break-word; font: inherit; color: inherit; }
 .ide-ai-input-row { display: flex; gap: 6px; padding: 8px 10px; border-top: 1px solid var(--border); }
 
 .ide-tab-close { margin-left: 8px; color: var(--fg-muted); opacity: 0; }

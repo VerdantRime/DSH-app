@@ -544,21 +544,39 @@ async function sendAiChat(question: string, action: 'explain' | 'debug' | 'optim
   const tab = activeTab()
   const lang = tab ? (runLanguage(tab) ?? 'plaintext') : 'plaintext'
   const prompt = buildChatPrompt(aiHistory, q, currentCodeContext(), lang, tab?.title ?? '')
-  const waiting = h('div', 'ide-ai-msg ide-ai-assistant', '思考中…')
-  aiHistoryEl().appendChild(waiting)
-  aiHistoryEl().scrollTop = aiHistoryEl().scrollHeight
+  const requestId = Date.now().toString(36) + Math.random().toString(36).slice(2)
+  const el = aiHistoryEl()
+  const bubble = h('div', 'ide-ai-msg ide-ai-assistant')
+  const stream = document.createElement('pre')
+  stream.className = 'ide-ai-streaming'
+  stream.textContent = '思考中…'
+  bubble.appendChild(stream)
+  el.appendChild(bubble)
+  el.scrollTop = el.scrollHeight
+  let acc = ''
+  let started = false
+  const unsub = window.api.onAiChunk(({ requestId: rid, chunk }) => {
+    if (rid !== requestId) return
+    if (!started) { started = true; stream.textContent = '' }
+    acc += chunk
+    stream.textContent = acc
+    el.scrollTop = el.scrollHeight
+  })
   try {
     const promptPath = await window.api.ideRunTemp('ai_prompt.txt')
     await window.api.ideWriteFile(promptPath, prompt)
-    const res = await window.api.aiAsk({ promptPath, model: aiModel || undefined })
-    waiting.remove()
+    const res = await window.api.aiAsk({ promptPath, model: aiModel || undefined, requestId })
+    unsub()
+    bubble.replaceChildren()
+    bubble.innerHTML = DOMPurify.sanitize(renderMarkdown(res.text))
     aiHistory.push({ role: 'assistant', content: res.text })
-    renderAiHistory()
+    el.scrollTop = el.scrollHeight
     const code = extractCodeBlock(res.text)
     if (canApplyAi(lastAiAction, !!code)) { lastAiCode = code; aiApplyEl().classList.remove('hidden') }
     else { lastAiCode = null; aiApplyEl().classList.add('hidden') }
   } catch (e) {
-    waiting.remove()
+    unsub()
+    bubble.remove()
     aiHistory.push({ role: 'assistant', content: 'AI 失败：' + (e instanceof Error ? e.message : String(e)) })
     renderAiHistory()
   }
