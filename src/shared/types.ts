@@ -35,6 +35,7 @@ export interface AppConfig {
       aiWidth: number
       outputHeight: number
     }
+    lastFolder: string
   }
   windowBounds: WindowBounds
 }

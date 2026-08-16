@@ -329,7 +329,18 @@ export function ideOpenFolderAt(dir: string): void {
   const rootEl = document.getElementById('ide-tree-root')
   if (rootEl) rootEl.textContent = dir
   void renderTree()
+  window.api.configSet({ ide: { lastFolder: dir } }).catch(() => {})
   document.dispatchEvent(new CustomEvent('dsh:navigate', { detail: 'ide' }))
+}
+
+function restoreLastFolder(dir: string): void {
+  treeRoot = dir
+  treeDir = dir
+  const tree = document.getElementById('ide-tree')
+  tree?.classList.remove('hidden')
+  const rootEl = document.getElementById('ide-tree-root')
+  if (rootEl) rootEl.textContent = dir
+  void renderTree()
 }
 
 function startInlineRename(row: HTMLElement, name: string, path: string): void {
@@ -986,13 +997,16 @@ function buildDom(): void {
 export async function initIde(): Promise<void> {
   panel = document.getElementById('panel-ide')
   if (!panel) return
+  let lastFolder = ''
   try {
     const cfg = await window.api.configGet()
     treeWidth = cfg.ide?.layout?.treeWidth ?? 200
     aiWidth = cfg.ide?.layout?.aiWidth ?? 320
     outputHeight = cfg.ide?.layout?.outputHeight ?? 160
+    lastFolder = cfg.ide?.lastFolder ?? ''
   } catch { /* 用默认值 */ }
   buildDom()
+  if (lastFolder) restoreLastFolder(lastFolder)
   editor = monaco.editor.create(document.getElementById('ide-editor') as HTMLElement, {
     value: '', language: 'plaintext', theme: editorTheme(), automaticLayout: true,
     fontSize: 14, tabSize: 4, minimap: { enabled: true }
