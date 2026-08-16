@@ -1,5 +1,5 @@
 import { app, dialog, ipcMain, shell, type BrowserWindow } from 'electron'
-import { IPC } from '../shared/types'
+import { IPC, type StatsScalarField, type StatsMapField } from '../shared/types'
 import { translateMarkdown } from './translate'
 import { listDirEntries, readFileWithPath, writeTextFile, deleteFile, renameFile } from './ide-files'
 import { detectToolchains } from './toolchain'
@@ -14,6 +14,7 @@ import { walkFiles, buildUploadPlan } from './upload-plan'
 import type { ConfigStore } from './store'
 import type { HarnessManager } from './harness-manager'
 import type { GithubService } from './github-service'
+import type { StatsStore } from './stats-store'
 
 export interface BackupApi {
   create: (destPath?: string) => Promise<{ path: string }>
@@ -25,6 +26,7 @@ export interface IpcDeps {
   harness: HarnessManager
   github: GithubService
   backup: BackupApi
+  stats: StatsStore
   getWindow: () => BrowserWindow | null
   quit: () => void
 }
@@ -186,4 +188,9 @@ export function registerIpc(deps: IpcDeps): void {
   // 备份/恢复
   ipcMain.handle(IPC.backupCreate, (_e, destPath?: string) => deps.backup.create(destPath))
   ipcMain.handle(IPC.backupRestore, (_e, srcPath: string) => deps.backup.restore(srcPath))
+  // 统计
+  ipcMain.handle(IPC.statsGet, () => deps.stats.get())
+  ipcMain.handle(IPC.statsReset, () => deps.stats.reset())
+  ipcMain.handle(IPC.statsBump, (_e, field: StatsScalarField, by?: number) => deps.stats.bump(field, by))
+  ipcMain.handle(IPC.statsBumpMap, (_e, field: StatsMapField, key: string, by?: number) => deps.stats.bumpMap(field, key, by))
 }

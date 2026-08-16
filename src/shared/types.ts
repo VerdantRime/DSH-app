@@ -105,6 +105,37 @@ export interface UploadScanResult {
   skipped: { path: string; reason: string }[]
 }
 
+export type StatsBucket = 'code' | 'chat' | null
+export interface StatsCtx { file?: string; lang?: string }
+
+export interface StatsCounters {
+  activeMs: number
+  codeMs: number
+  chatMs: number
+  launches: number
+  compiles: number
+  runs: number
+  savesManual: number
+  savesAuto: number
+  aiExplain: number
+  aiDebug: number
+  aiOptimize: number
+  aiChat: number
+  aiApply: number
+  byFile: Record<string, number>
+  byLang: Record<string, number>
+  byFileErrors: Record<string, number>
+}
+
+export interface StatsSnapshot {
+  totals: StatsCounters
+  session: StatsCounters
+  sessionStartTs: number
+}
+
+export type StatsScalarField = keyof Omit<StatsCounters, 'byFile' | 'byLang' | 'byFileErrors'>
+export type StatsMapField = 'byFile' | 'byLang' | 'byFileErrors'
+
 export interface IssueSummary {
   number: number
   title: string
@@ -230,6 +261,11 @@ export const IPC = {
   githubScanUpload: 'github:scanUpload',
   githubUploadBatch: 'github:uploadBatch',
   githubUploadProgress: 'github:uploadProgress',
+  statsGet: 'stats:get',
+  statsReset: 'stats:reset',
+  statsSetBucket: 'stats:setBucket',
+  statsBump: 'stats:bump',
+  statsBumpMap: 'stats:bumpMap',
   gitClone: 'git:clone',
   appQuitReal: 'app:quitReal',
   appShowWindow: 'app:showWindow',
@@ -269,6 +305,11 @@ export interface WorkdeskApi {
   githubScanUpload(localPaths: string[], mode: 'files' | 'folder', baseRepoDir: string): Promise<UploadScanResult>
   githubUploadBatch(owner: string, repo: string, message: string, files: { localPath: string; repoPath: string }[]): Promise<{ uploaded: number }>
   onGithubUploadProgress(cb: (p: { done: number; total: number }) => void): () => void
+  statsGet(): Promise<StatsSnapshot>
+  statsReset(): Promise<StatsSnapshot>
+  statsSetBucket(bucket: StatsBucket, ctx?: StatsCtx): Promise<void>
+  statsBump(field: StatsScalarField, by?: number): Promise<void>
+  statsBumpMap(field: StatsMapField, key: string, by?: number): Promise<void>
   gitClone(url: string): Promise<{ ok: boolean; dir?: string; error?: string }>
   githubDownloadFiles(owner: string, repo: string, paths: string[], destDir: string): Promise<{ saved: number; skipped: number }>
   githubPickSaveDir(): Promise<string | null>
