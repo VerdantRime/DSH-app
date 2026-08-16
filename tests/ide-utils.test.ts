@@ -47,9 +47,9 @@ describe('IDE 语言识别', () => {
     expect(clamp(50, 0, 10)).toBe(10)
   })
 
-  it('canApplyAi 仅找错/优化且含代码块可应用', () => {
+  it('canApplyAi 仅优化且含代码块可应用', () => {
     expect(canApplyAi('optimize', true)).toBe(true)
-    expect(canApplyAi('debug', true)).toBe(true)
+    expect(canApplyAi('debug', true)).toBe(false)
     expect(canApplyAi('explain', true)).toBe(false)
     expect(canApplyAi('chat', true)).toBe(false)
     expect(canApplyAi('debug', false)).toBe(false)
