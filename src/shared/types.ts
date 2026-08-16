@@ -266,6 +266,9 @@ export const IPC = {
   statsSetBucket: 'stats:setBucket',
   statsBump: 'stats:bump',
   statsBumpMap: 'stats:bumpMap',
+  statsShowExit: 'stats:showExit',
+  appQuitRequest: 'app:quitRequest',
+  appHideToTray: 'app:hideToTray',
   gitClone: 'git:clone',
   appQuitReal: 'app:quitReal',
   appShowWindow: 'app:showWindow',
@@ -310,6 +313,9 @@ export interface WorkdeskApi {
   statsSetBucket(bucket: StatsBucket, ctx?: StatsCtx): Promise<void>
   statsBump(field: StatsScalarField, by?: number): Promise<void>
   statsBumpMap(field: StatsMapField, key: string, by?: number): Promise<void>
+  onStatsShowExit(cb: () => void): () => void
+  quitRequest(): Promise<void>
+  hideToTray(): Promise<void>
   gitClone(url: string): Promise<{ ok: boolean; dir?: string; error?: string }>
   githubDownloadFiles(owner: string, repo: string, paths: string[], destDir: string): Promise<{ saved: number; skipped: number }>
   githubPickSaveDir(): Promise<string | null>

@@ -1,6 +1,7 @@
 import { resolveTheme, themeLabel } from './theme'
 import { WALLPAPERS, resolveWallpaper } from './wallpapers'
 import { GITHUB_TOKEN_URL, TOKEN_HELP_STEPS } from './github-help'
+import { openStatsView } from './stats-ui'
 import type { AppConfig, ThemeMode, GithubStatus, ToolchainReport } from '../shared/types'
 
 let cfg: AppConfig | null = null
@@ -74,6 +75,7 @@ function render(): void {
   panel.appendChild(renderIde())
   panel.appendChild(renderGithub())
   panel.appendChild(renderHarness())
+  panel.appendChild(renderStatsSection())
   panel.appendChild(renderAbout())
 }
 
@@ -324,6 +326,15 @@ function renderHarness(): HTMLElement {
     void window.api.backupRestore(p).then(() => { bakResult.textContent = '恢复完成，请重启应用生效' })
   }))
   s.appendChild(restRow)
+  return s
+}
+
+function renderStatsSection(): HTMLElement {
+  const s = section('统计信息')
+  const row = h('div', 'set-row')
+  row.appendChild(btn('打开统计信息', () => void openStatsView()))
+  s.appendChild(row)
+  s.appendChild(h('div', 'set-note', '记录编码时长、编译错误次数、AI 对话时长等；退出应用时也会显示本次总结'))
   return s
 }
 

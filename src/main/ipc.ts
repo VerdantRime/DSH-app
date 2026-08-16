@@ -31,6 +31,8 @@ export interface IpcDeps {
   tracker: StatsTracker
   getWindow: () => BrowserWindow | null
   quit: () => void
+  requestQuit: () => void
+  hideToTray: () => void
 }
 
 export function registerIpc(deps: IpcDeps): void {
@@ -104,6 +106,8 @@ export function registerIpc(deps: IpcDeps): void {
   })
   ipcMain.handle(IPC.appShowWindow, () => deps.getWindow()?.show())
   ipcMain.handle(IPC.appQuitReal, () => deps.quit())
+  ipcMain.handle(IPC.appQuitRequest, () => deps.requestQuit())
+  ipcMain.handle(IPC.appHideToTray, () => deps.hideToTray())
   // harness
   ipcMain.handle(IPC.harnessGetStatus, () => deps.harness.getStatus())
   ipcMain.handle(IPC.harnessStart, () => deps.harness.start())

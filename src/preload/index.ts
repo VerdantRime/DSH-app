@@ -76,8 +76,11 @@ const api: WorkdeskApi = {
   aiAsk: (req) => ipcRenderer.invoke(IPC.aiAsk, req),
   aiListModels: () => ipcRenderer.invoke(IPC.aiListModels),
   quitReal: () => ipcRenderer.invoke(IPC.appQuitReal),
+  quitRequest: () => ipcRenderer.invoke(IPC.appQuitRequest),
+  hideToTray: () => ipcRenderer.invoke(IPC.appHideToTray),
   showWindow: () => ipcRenderer.invoke(IPC.appShowWindow),
   onNavigate: (cb) => subscribe<string>(IPC.appNavigate, cb),
+  onStatsShowExit: (cb) => subscribe(IPC.statsShowExit, cb),
   getVersion: () => ipcRenderer.invoke(IPC.appGetVersion)
 }
 

@@ -4,6 +4,7 @@ import { initGithub } from './github'
 import { initIde } from './ide'
 import { initSettings } from './settings'
 import { statsSetPanel } from './stats'
+import { showExitSummary } from './stats-ui'
 
 let current: PanelId = DEFAULT_PANEL
 let collapsed = false
@@ -67,6 +68,7 @@ async function init(): Promise<void> {
   window.api.onNavigate((panelId) => {
     if (isPanelId(panelId)) select(panelId)
   })
+  window.api.onStatsShowExit(() => { void showExitSummary() })
   initChat()
   initIde()
   initGithub()

@@ -38,6 +38,18 @@ function buildHarnessManager(cfg: AppConfig): HarnessManager {
   })
 }
 
+function requestQuit(): void {
+  if (isQuitting) return
+  isQuitting = true
+  mainWindow?.show()
+  mainWindow?.webContents.send(IPC.statsShowExit)
+}
+
+function hideToTray(): void {
+  isQuitting = false
+  mainWindow?.hide()
+}
+
 function saveBounds(): void {
   if (!mainWindow || !store) return
   const b = mainWindow.getBounds()
@@ -97,7 +109,9 @@ if (!gotLock) {
       quit: () => {
         isQuitting = true
         app.quit()
-      }
+      },
+      requestQuit: () => requestQuit(),
+      hideToTray: () => hideToTray()
     })
 
     mainWindow = createMainWindow(cfg.windowBounds)
@@ -109,10 +123,7 @@ if (!gotLock) {
     })
 
     try {
-      tray = createTray(mainWindow, () => {
-        isQuitting = true
-        app.quit()
-      })
+      tray = createTray(mainWindow, () => requestQuit())
     } catch (e) {
       console.error('托盘创建失败（忽略，继续运行）', e)
     }
@@ -121,6 +132,11 @@ if (!gotLock) {
       if (shouldHideToTray(store?.get()?.closeToTray ?? true, isQuitting)) {
         e.preventDefault()
         mainWindow?.hide()
+        return
+      }
+      if (!isQuitting) {
+        e.preventDefault()
+        requestQuit()
       }
     })
     mainWindow.on('resize', saveBounds)
