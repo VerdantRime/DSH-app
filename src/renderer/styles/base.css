@@ -184,6 +184,14 @@ body.ide-resizing { user-select: none; cursor: col-resize; }
   border-color: transparent; color: #ffffff;
 }
 .btn.primary:hover:not(:disabled) { background: linear-gradient(135deg, var(--brand-indigo), var(--brand-navy)); }
+.ui-dialog-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 10001; display: flex; align-items: center; justify-content: center; }
+.ui-dialog-box { width: 420px; max-width: 90vw; background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; }
+.ui-dialog-title { font-size: 14px; font-weight: 700; color: var(--accent-strong); }
+.ui-dialog-label { font-size: 12px; color: var(--fg-muted); }
+.ui-dialog-input { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--card-bg); color: var(--fg); font-size: 13px; }
+.ui-dialog-input:focus { outline: none; border-color: var(--accent); }
+.ui-dialog-input-error { border-color: #cf222e; }
+.ui-dialog-actions { display: flex; gap: 8px; justify-content: flex-end; }
 
 /* ============ GitHub 面板 ============ */
 #panel-github { overflow: auto; padding: var(--space-4); }

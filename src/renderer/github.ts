@@ -16,6 +16,7 @@ import { parentPath, fileNameOf, joinRepoPath, validateNewFileName, breadcrumbSe
 import { GITHUB_TOKEN_URL, TOKEN_HELP_STEPS } from './github-help'
 import { ideOpenGithubFile, ideOpenFolderAt } from './ide'
 import { showContextMenu, copyText } from './context-menu'
+import { promptDialog } from './ui-dialog'
 
 type ListMode = 'mine' | 'starred' | 'search'
 type Tab = 'files' | 'issues' | 'pulls' | 'commits' | 'readme'
@@ -417,7 +418,7 @@ async function downloadSelected(): Promise<void> {
 }
 
 async function cloneRepoInto(): Promise<void> {
-  const url = window.prompt('输入要克隆的仓库地址（https:// 或 git@）', '')
+  const url = await promptDialog({ title: '克隆仓库', label: '仓库地址（https:// 或 git@）', placeholder: 'https://github.com/owner/repo.git', required: true })
   if (url === null) return
   try {
     const res = await window.api.gitClone(url)
@@ -436,7 +437,7 @@ async function cloneRepoInto(): Promise<void> {
 async function deleteFileAt(n: FileNode): Promise<void> {
   if (!currentRepo) return
   if (!window.confirm('确定删除文件 ' + n.path + ' 吗？')) return
-  const message = window.prompt('提交说明（commit message）', 'Delete ' + n.path)
+  const message = await promptDialog({ title: '删除文件', label: '提交说明（commit message）', defaultValue: 'Delete ' + n.path, required: true })
   if (message === null) return
   try {
     const { file } = await window.api.githubGetContents(currentRepo.owner, currentRepo.repo, n.path)
@@ -484,7 +485,7 @@ function pickAndUpload(): void {
     const f = input.files?.[0]
     if (!f) return
     const reader = new FileReader()
-    reader.onload = () => {
+    reader.onload = async () => {
       const dataUrl = String(reader.result ?? '')
       const comma = dataUrl.indexOf(',')
       const b64 = comma >= 0 ? dataUrl.slice(comma + 1) : ''
@@ -493,19 +494,17 @@ function pickAndUpload(): void {
         return
       }
       const target = (filePath ? filePath + '/' : '') + f.name
-      const message = window.prompt('提交说明（commit message）', 'Upload ' + target)
+      const message = await promptDialog({ title: '上传文件', label: '提交说明（commit message）', defaultValue: 'Upload ' + target, required: true })
       if (message === null) return
-      void (async () => {
-        try {
-          let sha: string | undefined
-          const { file } = await window.api.githubGetContents(currentRepo!.owner, currentRepo!.repo, target)
-          if (file) sha = file.sha
-          await window.api.githubUploadFile(currentRepo!.owner, currentRepo!.repo, target, b64, message, sha)
-          void loadFiles()
-        } catch (e) {
-          window.alert('上传失败：' + githubErrorHint(e))
-        }
-      })()
+      try {
+        let sha: string | undefined
+        const { file } = await window.api.githubGetContents(currentRepo!.owner, currentRepo!.repo, target)
+        if (file) sha = file.sha
+        await window.api.githubUploadFile(currentRepo!.owner, currentRepo!.repo, target, b64, message, sha)
+        void loadFiles()
+      } catch (e) {
+        window.alert('上传失败：' + githubErrorHint(e))
+      }
     }
     reader.readAsDataURL(f)
   })
@@ -560,9 +559,9 @@ async function downloadFile(path: string): Promise<void> {
   }
 }
 
-function createFile(): void {
+async function createFile(): Promise<void> {
   if (!currentRepo) return
-  const name = window.prompt('新文件名（创建在当前目录）', '')
+  const name = await promptDialog({ title: '新建文件', label: '文件名（创建在当前目录）', placeholder: '如 main.cpp', required: true })
   if (name === null) return
   const err = validateNewFileName(name)
   if (err) {
@@ -598,9 +597,9 @@ async function loadFileContent(path: string): Promise<void> {
       }
       bar.appendChild(btn('下载', () => void downloadFile(path)))
       if (canPush) {
-        bar.appendChild(btn('删除', () => {
+        bar.appendChild(btn('删除', async () => {
           if (!window.confirm('确定删除文件 ' + path + ' 吗？此操作会产生一次删除提交。')) return
-          const message = window.prompt('提交说明（commit message）', 'Delete ' + path)
+          const message = await promptDialog({ title: '删除文件', label: '提交说明（commit message）', defaultValue: 'Delete ' + path, required: true })
           if (message === null) return
           void window.api
             .githubDeleteFile(currentRepo!.owner, currentRepo!.repo, path, message, currentFileSha)

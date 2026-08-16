@@ -13,4 +13,9 @@ describe('IDE UI 细节样式（base.css）', () => {
     expect(css).toMatch(/\.ide-ai-msg\s+pre\s*\{[^}]*max-width:\s*100%/)
     expect(css).toMatch(/\.ide-ai-msg\s+pre\s*\{[^}]*overflow-x:\s*auto/)
   })
+
+  it('自制输入弹窗样式存在', () => {
+    expect(css).toMatch(/\.ui-dialog-overlay\s*\{[^}]*position:\s*fixed/)
+    expect(css).toMatch(/\.ui-dialog-input\s*\{[^}]*border-radius/)
+  })
 })

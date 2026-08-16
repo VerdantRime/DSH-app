@@ -4,6 +4,7 @@ import { githubErrorHint } from './github-utils'
 import { showContextMenu, copyText, type CtxMenuItem } from './context-menu'
 import DOMPurify from 'dompurify'
 import { renderMarkdown } from './markdown'
+import { promptDialog } from './ui-dialog'
 import type { IdeRunResult } from '../shared/types'
 
 const MONACO_LANG: Record<IdeLanguage, string> = {
@@ -119,7 +120,7 @@ export function ideOpenGithubFile(owner: string, repo: string, path: string, con
 
 async function saveGithubTab(tab: Tab): Promise<void> {
   if (!tab.github) return
-  const message = window.prompt('提交说明（commit message）', 'Update ' + tab.github.path)
+  const message = await promptDialog({ title: '提交到 GitHub', label: '提交说明（commit message）', defaultValue: 'Update ' + tab.github.path, required: true })
   if (message === null) return
   try {
     await window.api.githubSaveFile(tab.github.owner, tab.github.repo, tab.github.path, tab.model.getValue(), message, tab.github.sha)
@@ -146,7 +147,7 @@ async function deleteGithubActive(): Promise<void> {
   const tab = activeTab()
   if (!tab?.github) return
   if (!window.confirm('确定删除文件 ' + tab.github.path + ' 吗？')) return
-  const message = window.prompt('提交说明（commit message）', 'Delete ' + tab.github.path)
+  const message = await promptDialog({ title: '删除 GitHub 文件', label: '提交说明（commit message）', defaultValue: 'Delete ' + tab.github.path, required: true })
   if (message === null) return
   try {
     await window.api.githubDeleteFile(tab.github.owner, tab.github.repo, tab.github.path, message, tab.github.sha ?? '')
