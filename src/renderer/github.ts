@@ -750,6 +750,7 @@ function renderEditor(path: string, initialContent?: string, sha?: string, after
       .catch((e) => window.alert('提交失败：' + githubErrorHint(e)))
   })
   submitBtn.classList.add('primary')
+  row.appendChild(submitBtn)
   row.appendChild(btn('取消', done))
   content.appendChild(row)
 }
