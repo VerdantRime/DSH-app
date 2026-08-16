@@ -1,5 +1,5 @@
 import monaco from './monaco-setup'
-import { languageForFile, tabTitleFromPath, isInteractiveSource, usesConsoleApis, defaultRunFileName, extractCodeBlock, githubTabKey, buildChatPrompt, canApplyAi, clamp, parseCompileErrors, shouldAutoSave, type ChatTurn, type IdeLanguage } from './ide-utils'
+import { languageForFile, tabTitleFromPath, isInteractiveSource, usesConsoleApis, defaultRunFileName, extractCodeBlock, githubTabKey, buildChatPrompt, canApplyAi, clamp, parseCompileErrors, shouldAutoSave, aiActionField, type ChatTurn, type IdeLanguage } from './ide-utils'
 import { githubErrorHint } from './github-utils'
 import { showContextMenu, copyText, type CtxMenuItem } from './context-menu'
 import DOMPurify from 'dompurify'
@@ -294,6 +294,7 @@ async function saveTabToDisk(tab: Tab, opts: { auto?: boolean; silent?: boolean 
   try {
     await window.api.ideWriteFile(tab.path!, tab.model.getValue(), tab.encoding ?? 'utf-8')
     if (!opts.silent) flashStatus(opts.auto ? '已自动保存：' + tab.path : '已保存：' + tab.path)
+    void window.api.statsBump(opts.auto || opts.silent ? 'savesAuto' : 'savesManual')
   } catch (e) { window.alert('保存失败：' + (e instanceof Error ? e.message : String(e))) }
 }
 
@@ -539,6 +540,7 @@ async function sendAiChat(question: string, action: 'explain' | 'debug' | 'optim
   aiHistory.push({ role: 'user', content: q })
   renderAiHistory()
   lastAiAction = action
+  void window.api.statsBump(aiActionField(action))
   const tab = activeTab()
   const lang = tab ? (runLanguage(tab) ?? 'plaintext') : 'plaintext'
   const prompt = buildChatPrompt(aiHistory, q, currentCodeContext(), lang, tab?.title ?? '')
@@ -577,6 +579,7 @@ function applyAiCode(): void {
   if (!tab || lastAiCode == null || !editor) return
   const range = lastAiRange ?? tab.model.getFullModelRange()
   editor.executeEdits('ai-apply', [{ range, text: lastAiCode }])
+  void window.api.statsBump('aiApply')
   void saveTabToDisk(tab, { silent: true })
   flashStatus('已应用，可 Ctrl+Z 撤回')
   lastAiCode = null
@@ -598,6 +601,7 @@ async function compileActive(): Promise<void> {
     return
   }
   void saveTabToDisk(tab, { silent: true })
+  void window.api.statsBump('compiles')
   const content = tab.model.getValue()
   try {
     let targetPath = tab.path
@@ -612,6 +616,7 @@ async function compileActive(): Promise<void> {
       showOutput(res.output + (res.exitCode !== null ? ('\n[退出码 ' + res.exitCode + ']') : ''))
       const errs = parseCompileErrors(res.output)
       if (errs.length) {
+        void window.api.statsBumpMap('byFileErrors', tab.path ?? tab.github?.path ?? tab.title, errs.length)
         const markers: monaco.editor.IMarkerData[] = errs.map((e) => ({
           severity: monaco.MarkerSeverity.Error,
           message: e.message,
@@ -638,6 +643,7 @@ async function runActive(): Promise<void> {
     return
   }
   void saveTabToDisk(tab, { silent: true })
+  void window.api.statsBump('runs')
   const content = tab.model.getValue()
   const interactive = isInteractiveSource(content, lang) || usesConsoleApis(content)
   try {

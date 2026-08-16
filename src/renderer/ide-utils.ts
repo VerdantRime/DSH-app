@@ -150,6 +150,16 @@ export function tabTitleFromPath(path: string): string {
   return i < 0 ? path : path.slice(i + 1)
 }
 
+/** AI 动作 → 统计字段。 */
+export function aiActionField(action: 'explain' | 'debug' | 'optimize' | 'chat'): 'aiExplain' | 'aiDebug' | 'aiOptimize' | 'aiChat' {
+  switch (action) {
+    case 'explain': return 'aiExplain'
+    case 'debug': return 'aiDebug'
+    case 'optimize': return 'aiOptimize'
+    case 'chat': return 'aiChat'
+  }
+}
+
 /** 是否应自动保存：有本地路径且不是 GitHub 文件。 */
 export function shouldAutoSave(tab: { path: string | null; github?: unknown } | null | undefined): boolean {
   return !!tab && !!tab.path && !tab.github

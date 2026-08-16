@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { languageForFile, tabTitleFromPath, githubTabKey, canApplyAi, clamp, diffHunks, applyHunks, parseCompileErrors, shouldAutoSave } from '../src/renderer/ide-utils'
+import { languageForFile, tabTitleFromPath, githubTabKey, canApplyAi, clamp, diffHunks, applyHunks, parseCompileErrors, shouldAutoSave, aiActionField } from '../src/renderer/ide-utils'
 
 describe('IDE 语言识别', () => {
   it('按扩展名识别语言', () => {
@@ -63,6 +63,13 @@ describe('IDE 语言识别', () => {
     expect(tabTitleFromPath('C:\\a\\b\\main.py')).toBe('main.py')
     expect(tabTitleFromPath('/x/y/z.c')).toBe('z.c')
     expect(tabTitleFromPath('README.md')).toBe('README.md')
+  })
+
+  it('aiActionField 映射动作到统计字段', () => {
+    expect(aiActionField('explain')).toBe('aiExplain')
+    expect(aiActionField('debug')).toBe('aiDebug')
+    expect(aiActionField('optimize')).toBe('aiOptimize')
+    expect(aiActionField('chat')).toBe('aiChat')
   })
 
   it('shouldAutoSave 仅本地有路径文件', () => {
