@@ -149,3 +149,8 @@ export function tabTitleFromPath(path: string): string {
   const i = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'))
   return i < 0 ? path : path.slice(i + 1)
 }
+
+/** 是否应自动保存：有本地路径且不是 GitHub 文件。 */
+export function shouldAutoSave(tab: { path: string | null; github?: unknown } | null | undefined): boolean {
+  return !!tab && !!tab.path && !tab.github
+}

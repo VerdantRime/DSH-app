@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { languageForFile, tabTitleFromPath, githubTabKey, canApplyAi, clamp, diffHunks, applyHunks, parseCompileErrors } from '../src/renderer/ide-utils'
+import { languageForFile, tabTitleFromPath, githubTabKey, canApplyAi, clamp, diffHunks, applyHunks, parseCompileErrors, shouldAutoSave } from '../src/renderer/ide-utils'
 
 describe('IDE 语言识别', () => {
   it('按扩展名识别语言', () => {
@@ -63,5 +63,12 @@ describe('IDE 语言识别', () => {
     expect(tabTitleFromPath('C:\\a\\b\\main.py')).toBe('main.py')
     expect(tabTitleFromPath('/x/y/z.c')).toBe('z.c')
     expect(tabTitleFromPath('README.md')).toBe('README.md')
+  })
+
+  it('shouldAutoSave 仅本地有路径文件', () => {
+    expect(shouldAutoSave({ path: 'C:\\a\\b.cpp' })).toBe(true)
+    expect(shouldAutoSave({ path: null })).toBe(false)
+    expect(shouldAutoSave({ path: 'x', github: { owner: 'a', repo: 'b', path: 'x' } })).toBe(false)
+    expect(shouldAutoSave(undefined)).toBe(false)
   })
 })

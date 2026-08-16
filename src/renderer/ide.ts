@@ -1,5 +1,5 @@
 import monaco from './monaco-setup'
-import { languageForFile, tabTitleFromPath, isInteractiveSource, usesConsoleApis, defaultRunFileName, extractCodeBlock, githubTabKey, buildChatPrompt, canApplyAi, clamp, parseCompileErrors, type ChatTurn, type IdeLanguage } from './ide-utils'
+import { languageForFile, tabTitleFromPath, isInteractiveSource, usesConsoleApis, defaultRunFileName, extractCodeBlock, githubTabKey, buildChatPrompt, canApplyAi, clamp, parseCompileErrors, shouldAutoSave, type ChatTurn, type IdeLanguage } from './ide-utils'
 import { githubErrorHint } from './github-utils'
 import { showContextMenu, copyText, type CtxMenuItem } from './context-menu'
 import DOMPurify from 'dompurify'
@@ -281,24 +281,41 @@ async function openFileInTab(path: string): Promise<void> {
   } catch (e) { window.alert('无法打开文件：' + (e instanceof Error ? e.message : String(e))) }
 }
 
+const autoSaveTimers = new Map<number, number>()
+
+async function saveTabToDisk(tab: Tab, opts: { auto?: boolean; silent?: boolean } = {}): Promise<void> {
+  if (!shouldAutoSave(tab) || !tabs.includes(tab)) return
+  const pending = autoSaveTimers.get(tab.id)
+  if (pending !== undefined) { clearTimeout(pending); autoSaveTimers.delete(tab.id) }
+  try {
+    await window.api.ideWriteFile(tab.path!, tab.model.getValue(), tab.encoding ?? 'utf-8')
+    if (!opts.silent) flashStatus(opts.auto ? '已自动保存：' + tab.path : '已保存：' + tab.path)
+  } catch (e) { window.alert('保存失败：' + (e instanceof Error ? e.message : String(e))) }
+}
+
+function scheduleAutoSave(tab: Tab): void {
+  if (!shouldAutoSave(tab)) return
+  const pending = autoSaveTimers.get(tab.id)
+  if (pending !== undefined) clearTimeout(pending)
+  autoSaveTimers.set(tab.id, window.setTimeout(() => {
+    autoSaveTimers.delete(tab.id)
+    void saveTabToDisk(tab, { auto: true })
+  }, 15000))
+}
+
 async function saveActive(): Promise<void> {
   const tab = activeTab()
   if (!tab) return
   if (tab.github) { await saveGithubTab(tab); return }
-  const content = tab.model.getValue()
-  let path = tab.path
-  if (!path) {
-    path = await window.api.ideSaveFileDialog(tab.title)
+  if (!tab.path) {
+    const path = await window.api.ideSaveFileDialog(tab.title)
     if (!path) return
     tab.path = path
     tab.title = tabTitleFromPath(path)
     monaco.editor.setModelLanguage(tab.model, MONACO_LANG[languageForFile(path)])
     renderTabs()
   }
-  try {
-    await window.api.ideWriteFile(path, content, tab.encoding ?? 'utf-8')
-    flashStatus('已保存：' + path)
-  } catch (e) { window.alert('保存失败：' + (e instanceof Error ? e.message : String(e))) }
+  await saveTabToDisk(tab)
 }
 
 function flashStatus(text: string): void {
@@ -556,6 +573,7 @@ function applyAiCode(): void {
   if (!tab || lastAiCode == null || !editor) return
   const range = lastAiRange ?? tab.model.getFullModelRange()
   editor.executeEdits('ai-apply', [{ range, text: lastAiCode }])
+  void saveTabToDisk(tab, { silent: true })
   flashStatus('已应用，可 Ctrl+Z 撤回')
   lastAiCode = null
   lastAiRange = null
@@ -575,6 +593,7 @@ async function compileActive(): Promise<void> {
     window.alert('当前文件语言不支持编译（支持 Python / C / C++ / Java）。请手动把语言切换为其中之一。')
     return
   }
+  void saveTabToDisk(tab, { silent: true })
   const content = tab.model.getValue()
   try {
     let targetPath = tab.path
@@ -614,6 +633,7 @@ async function runActive(): Promise<void> {
     window.alert('当前文件语言不支持一键运行（支持 Python / C / C++ / Java）。请手动把语言切换为其中之一。')
     return
   }
+  void saveTabToDisk(tab, { silent: true })
   const content = tab.model.getValue()
   const interactive = isInteractiveSource(content, lang) || usesConsoleApis(content)
   try {
@@ -890,6 +910,10 @@ export async function initIde(): Promise<void> {
     fontSize: 14, tabSize: 4, minimap: { enabled: true }
   })
   editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => void saveActive())
+  editor.onDidChangeModelContent(() => {
+    const tab = activeTab()
+    if (tab) scheduleAutoSave(tab)
+  })
   registerContextActions()
   const first = newTab('未命名', null, '', 'plaintext')
   switchTab(first.id)
