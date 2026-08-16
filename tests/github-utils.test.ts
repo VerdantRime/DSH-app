@@ -59,6 +59,7 @@ describe('github-utils 路径工具', () => {
     expect(githubErrorHint(new Error('403 Resource not accessible by integration'))).toContain('无写入权限')
     expect(githubErrorHint(new Error('Unprocessable Entity'))).toContain('422')
     expect(githubErrorHint(new Error('boom'))).toBe('boom')
+    expect(githubErrorHint(new Error('Repository rule violations found\nSecret detected in content'))).toContain('密钥')
   })
 
   it('isMarkdownFile 识别常见 md 扩展名', () => {

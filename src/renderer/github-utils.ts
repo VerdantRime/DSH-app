@@ -18,6 +18,9 @@ export function joinRepoPath(dir: string, name: string): string {
 /** 将 GitHub 写操作错误转成中文可读提示。 */
 export function githubErrorHint(e: unknown): string {
   const m = e instanceof Error ? e.message : String(e)
+  if (/secret detected|repository rule|push protection|secret scanning/i.test(m)) {
+    return '上传被 GitHub 拦截：内容里含疑似密钥/敏感信息（secret），已触发推送保护。请检查所传文件是否含 API Key / token / 密码等，删除后再试'
+  }
   if (/403|resource not accessible|not found/i.test(m)) {
     return '无写入权限（403）：请确认 token 对该仓库有 Read and write 权限，且仓库已包含在 token 授权范围内'
   }
