@@ -632,9 +632,9 @@ async function compileActive(): Promise<void> {
       showOutput('编译成功，无错误')
     } else {
       showOutput(res.output + (res.exitCode !== null ? ('\n[退出码 ' + res.exitCode + ']') : ''))
+      void window.api.statsBumpMap('byFileErrors', tab.path ?? tab.github?.path ?? tab.title, 1)
       const errs = parseCompileErrors(res.output)
       if (errs.length) {
-        void window.api.statsBumpMap('byFileErrors', tab.path ?? tab.github?.path ?? tab.title, errs.length)
         const markers: monaco.editor.IMarkerData[] = errs.map((e) => ({
           severity: monaco.MarkerSeverity.Error,
           message: e.message,

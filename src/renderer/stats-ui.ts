@@ -98,7 +98,7 @@ export async function openStatsView(): Promise<void> {
   if (langBars.length === 0) body.appendChild(h('div', 'stats-empty', '暂无数据'))
   else langBars.forEach((b) => body.appendChild(b))
 
-  body.appendChild(h('div', 'stats-sub', '编译错误（按文件）'))
+  body.appendChild(h('div', 'stats-sub', '编译出错次数（按文件）'))
   const errEntries = Object.entries(t.byFileErrors).sort((a, b) => b[1] - a[1])
   if (errEntries.length === 0) body.appendChild(h('div', 'stats-empty', '暂无数据'))
   else for (const [name, val] of errEntries) body.appendChild(twoCol(name, String(val), String(s.byFileErrors[name] ?? 0)))
@@ -125,7 +125,7 @@ export async function showExitSummary(): Promise<void> {
     body.appendChild(oneRow('编码时长', formatDuration(s.codeMs)))
     body.appendChild(oneRow('AI 对话时长', formatDuration(s.chatMs)))
     body.appendChild(oneRow('编译次数', String(s.compiles)))
-    body.appendChild(oneRow('编译错误总数', String(sum(s.byFileErrors))))
+    body.appendChild(oneRow('编译出错次数', String(sum(s.byFileErrors))))
     body.appendChild(oneRow('运行次数', String(s.runs)))
     body.appendChild(oneRow('保存（手动 / 自动）', s.savesManual + ' / ' + s.savesAuto))
     body.appendChild(oneRow('AI 使用次数', String(s.aiExplain + s.aiDebug + s.aiOptimize + s.aiChat)))
