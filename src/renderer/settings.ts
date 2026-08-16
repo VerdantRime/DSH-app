@@ -340,7 +340,7 @@ function renderStatsSection(): HTMLElement {
 
 function renderAbout(): HTMLElement {
   const s = section('关于')
-  s.appendChild(h('div', 'set-note', 'DeepSeek工作台 v3.4.1'))
+  s.appendChild(h('div', 'set-note', 'DeepSeek工作台 v3.4.2'))
   s.appendChild(h('div', 'set-note', '数据目录：应用数据目录（%APPDATA%） + ' + (cfg?.harness.dataDir ?? '~/.dsh')))
   return s
 }
