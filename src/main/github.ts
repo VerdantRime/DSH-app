@@ -144,6 +144,7 @@ export interface IGithubClient {
   getReadme(owner: string, repo: string): Promise<ReadmeContent | null>
   listTreeFiles(owner: string, repo: string, dirPath?: string): Promise<string[]>
   createCommit(owner: string, repo: string, message: string, files: { path: string; content: string }[]): Promise<void>
+  createCommitBase64(owner: string, repo: string, message: string, files: { path: string; contentBase64: string }[], onProgress?: (done: number, total: number) => void): Promise<void>
 }
 
 export const DEFAULT_GITHUB_API = 'https://api.github.com'
@@ -343,6 +344,40 @@ export class GithubClient implements IGithubClient {
         encoding: 'base64'
       })
       entries.push({ path: f.path, mode: '100644', type: 'blob', sha: (blob.data as any).sha as string })
+    }
+    const tree = await this.octokit.rest.git.createTree({ owner, repo, base_tree: baseTree, tree: entries })
+    const newCommit = await this.octokit.rest.git.createCommit({
+      owner,
+      repo,
+      message,
+      tree: (tree.data as any).sha as string,
+      parents: [baseCommitSha]
+    })
+    await this.octokit.rest.git.updateRef({ owner, repo, ref: 'heads/' + branch, sha: (newCommit.data as any).sha as string })
+  }
+
+  /** 通过 Git Data API 把多个二进制文件（base64）合并成一次 commit，逐文件回调进度。 */
+  async createCommitBase64(
+    owner: string,
+    repo: string,
+    message: string,
+    files: { path: string; contentBase64: string }[],
+    onProgress?: (done: number, total: number) => void
+  ): Promise<void> {
+    if (files.length === 0) return
+    const repoInfo = await this.octokit.rest.repos.get({ owner, repo })
+    const branch = (repoInfo.data as any).default_branch ?? 'main'
+    const ref = await this.octokit.rest.git.getRef({ owner, repo, ref: 'heads/' + branch })
+    const baseCommitSha = (ref.data as any).object.sha as string
+    const commit = await this.octokit.rest.git.getCommit({ owner, repo, commit_sha: baseCommitSha })
+    const baseTree = (commit.data as any).tree.sha as string
+    const entries: { path: string; mode: '100644'; type: 'blob'; sha: string }[] = []
+    let done = 0
+    for (const f of files) {
+      const blob = await this.octokit.rest.git.createBlob({ owner, repo, content: f.contentBase64, encoding: 'base64' })
+      entries.push({ path: f.path, mode: '100644', type: 'blob', sha: (blob.data as any).sha as string })
+      done++
+      onProgress?.(done, files.length)
     }
     const tree = await this.octokit.rest.git.createTree({ owner, repo, base_tree: baseTree, tree: entries })
     const newCommit = await this.octokit.rest.git.createCommit({

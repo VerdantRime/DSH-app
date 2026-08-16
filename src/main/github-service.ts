@@ -145,6 +145,24 @@ export class GithubService {
     await (await this.getClient()).createCommit(owner, repo, message, files)
   }
 
+  async uploadBatch(
+    owner: string,
+    repo: string,
+    message: string,
+    files: { localPath: string; repoPath: string }[],
+    onProgress?: (done: number, total: number) => void
+  ): Promise<{ uploaded: number }> {
+    if (files.length === 0) return { uploaded: 0 }
+    const client = await this.getClient()
+    const prepared: { path: string; contentBase64: string }[] = []
+    for (const f of files) {
+      const buf = await fs.readFile(f.localPath)
+      prepared.push({ path: f.repoPath, contentBase64: buf.toString('base64') })
+    }
+    await client.createCommitBase64(owner, repo, message, prepared, onProgress)
+    return { uploaded: prepared.length }
+  }
+
   async downloadFiles(
     owner: string,
     repo: string,

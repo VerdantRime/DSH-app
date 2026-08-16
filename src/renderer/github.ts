@@ -7,7 +7,8 @@ import type {
   PullSummary,
   PullDetail,
   CommitSummary,
-  CommitDetail
+  CommitDetail,
+  UploadScanResult
 } from '../shared/types'
 import { FOLDER_ICON, FILE_ICON, GITHUB_ICON } from './icons'
 import DOMPurify from 'dompurify'
@@ -477,38 +478,118 @@ async function openInIde(path: string): Promise<void> {
   }
 }
 
-function pickAndUpload(): void {
-  if (!currentRepo) return
-  const input = document.createElement('input')
-  input.type = 'file'
-  input.addEventListener('change', () => {
-    const f = input.files?.[0]
-    if (!f) return
-    const reader = new FileReader()
-    reader.onload = async () => {
-      const dataUrl = String(reader.result ?? '')
-      const comma = dataUrl.indexOf(',')
-      const b64 = comma >= 0 ? dataUrl.slice(comma + 1) : ''
-      if (!b64) {
-        window.alert('读取文件失败，请重试')
-        return
-      }
-      const target = (filePath ? filePath + '/' : '') + f.name
-      const message = await promptDialog({ title: '上传文件', label: '提交说明（commit message）', defaultValue: 'Upload ' + target, required: true })
-      if (message === null) return
-      try {
-        let sha: string | undefined
-        const { file } = await window.api.githubGetContents(currentRepo!.owner, currentRepo!.repo, target)
-        if (file) sha = file.sha
-        await window.api.githubUploadFile(currentRepo!.owner, currentRepo!.repo, target, b64, message, sha)
-        void loadFiles()
-      } catch (e) {
-        window.alert('上传失败：' + githubErrorHint(e))
-      }
+function chooseUploadSource(): Promise<'files' | 'folder' | null> {
+  return new Promise((resolve) => {
+    const overlay = h('div', 'ui-dialog-overlay')
+    const box = h('div', 'ui-dialog-box')
+    box.appendChild(h('div', 'ui-dialog-title', '上传文件'))
+    box.appendChild(h('div', 'ui-dialog-label', '选择上传方式'))
+    const actions = h('div', 'ui-dialog-actions')
+    const filesBtn = h('button', 'btn primary', '选择多个文件')
+    const folderBtn = h('button', 'btn', '选择整个文件夹')
+    const cancelBtn = h('button', 'btn', '取消')
+    let done = false
+    const finish = (v: 'files' | 'folder' | null): void => {
+      if (done) return
+      done = true
+      overlay.remove()
+      resolve(v)
     }
-    reader.readAsDataURL(f)
+    filesBtn.addEventListener('click', () => finish('files'))
+    folderBtn.addEventListener('click', () => finish('folder'))
+    cancelBtn.addEventListener('click', () => finish(null))
+    actions.appendChild(filesBtn)
+    actions.appendChild(folderBtn)
+    actions.appendChild(cancelBtn)
+    box.appendChild(actions)
+    overlay.appendChild(box)
+    document.body.appendChild(overlay)
   })
-  input.click()
+}
+
+function confirmUpload(plan: UploadScanResult): Promise<string | null> {
+  return new Promise((resolve) => {
+    const overlay = h('div', 'ui-dialog-overlay')
+    const box = h('div', 'ui-dialog-box upload-confirm')
+    box.appendChild(h('div', 'ui-dialog-title', '确认上传 ' + plan.files.length + ' 个文件'))
+    box.appendChild(h('div', 'ui-dialog-label', '目标目录：' + (filePath || '仓库根目录')))
+    const list = h('div', 'upload-list')
+    for (const f of plan.files) list.appendChild(h('div', 'upload-file', f.repoPath))
+    for (const s of plan.skipped) list.appendChild(h('div', 'upload-skip', '跳过：' + s.path + '（' + s.reason + '）'))
+    box.appendChild(list)
+    const msg = document.createElement('input')
+    msg.className = 'ui-dialog-input'
+    msg.placeholder = '提交说明（commit message）'
+    msg.value = 'Upload ' + plan.files.length + ' files'
+    box.appendChild(msg)
+    const actions = h('div', 'ui-dialog-actions')
+    const ok = h('button', 'btn primary', '开始上传')
+    const cancel = h('button', 'btn', '取消')
+    let done = false
+    const finish = (v: string | null): void => {
+      if (done) return
+      done = true
+      overlay.remove()
+      resolve(v)
+    }
+    ok.addEventListener('click', () => {
+      const v = msg.value.trim()
+      if (!v) { msg.focus(); return }
+      finish(v)
+    })
+    cancel.addEventListener('click', () => finish(null))
+    msg.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') ok.click()
+      else if (e.key === 'Escape') finish(null)
+    })
+    actions.appendChild(ok)
+    actions.appendChild(cancel)
+    box.appendChild(actions)
+    overlay.appendChild(box)
+    document.body.appendChild(overlay)
+    msg.focus()
+    msg.select()
+  })
+}
+
+async function pickAndUpload(): Promise<void> {
+  if (!currentRepo) return
+  const mode = await chooseUploadSource()
+  if (!mode) return
+  let localPaths: string[] = []
+  if (mode === 'files') {
+    localPaths = await window.api.githubPickFiles()
+    if (localPaths.length === 0) return
+  } else {
+    const dir = await window.api.githubPickFolder()
+    if (!dir) return
+    localPaths = [dir]
+  }
+  let plan
+  try {
+    plan = await window.api.githubScanUpload(localPaths, mode, filePath)
+  } catch (e) {
+    window.alert('扫描失败：' + errMsg(e))
+    return
+  }
+  if (plan.files.length === 0) {
+    window.alert('没有可上传的文件' + (plan.skipped.length ? '\n跳过：' + plan.skipped.map((s) => s.path).join('、') : ''))
+    return
+  }
+  const message = await confirmUpload(plan)
+  if (message === null) return
+  try {
+    showProgressBar('正在上传… 0 / ' + plan.files.length, false)
+    const unsub = window.api.onGithubUploadProgress((p) => updateProgressBar(p.done, p.total))
+    await window.api.githubUploadBatch(currentRepo!.owner, currentRepo!.repo, message, plan.files)
+    unsub()
+    hideProgressBar()
+    window.alert('已上传 ' + plan.files.length + ' 个文件' + (plan.skipped.length ? '（跳过 ' + plan.skipped.length + ' 个）' : ''))
+    void loadFiles()
+  } catch (e) {
+    hideProgressBar()
+    window.alert('上传失败：' + githubErrorHint(e))
+  }
 }
 
 let progressUnsub: (() => void) | null = null

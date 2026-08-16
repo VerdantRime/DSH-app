@@ -10,6 +10,7 @@ import { promises as fs } from 'fs'
 import type { IdeRunRequest } from '../shared/types'
 import { askWithModel, buildPromptTask, listModels } from './ai'
 import { cloneRepo, repoNameFromUrl, validateCloneUrl } from './clone'
+import { walkFiles, buildUploadPlan } from './upload-plan'
 import type { ConfigStore } from './store'
 import type { HarnessManager } from './harness-manager'
 import type { GithubService } from './github-service'
@@ -127,6 +128,33 @@ export function registerIpc(deps: IpcDeps): void {
   ipcMain.handle(IPC.githubGetReadme, (_e, o, r) => deps.github.getReadme(o, r))
   ipcMain.handle(IPC.githubListTree, (_e, o, r, d) => deps.github.listTreeFiles(o, r, d))
   ipcMain.handle(IPC.githubCommitFiles, (_e, o, r, m, f) => deps.github.commitFiles(o, r, m, f))
+  ipcMain.handle(IPC.githubPickFiles, async () => {
+    const win = deps.getWindow()
+    const opts: Electron.OpenDialogOptions = { properties: ['openFile', 'multiSelections'] }
+    const res = win ? await dialog.showOpenDialog(win, opts) : await dialog.showOpenDialog(opts)
+    return res.canceled ? [] : res.filePaths
+  })
+  ipcMain.handle(IPC.githubPickFolder, async () => {
+    const win = deps.getWindow()
+    const opts: Electron.OpenDialogOptions = { properties: ['openDirectory'] }
+    const res = win ? await dialog.showOpenDialog(win, opts) : await dialog.showOpenDialog(opts)
+    return res.canceled ? null : res.filePaths?.[0] ?? null
+  })
+  ipcMain.handle(IPC.githubScanUpload, async (_e, localPaths: string[], mode: 'files' | 'folder', baseRepoDir: string) => {
+    let entries: { path: string; size: number }[] = []
+    let rootDir = ''
+    if (mode === 'folder') {
+      rootDir = localPaths[0] ?? ''
+      entries = await walkFiles(rootDir)
+    } else {
+      for (const p of localPaths) {
+        const st = await fs.stat(p).catch(() => null)
+        entries.push({ path: p, size: st?.size ?? 0 })
+      }
+    }
+    return buildUploadPlan(entries, rootDir, baseRepoDir, mode)
+  })
+  ipcMain.handle(IPC.githubUploadBatch, (_e, o: string, r: string, m: string, files: { localPath: string; repoPath: string }[]) => deps.github.uploadBatch(o, r, m, files, (done, total) => deps.getWindow()?.webContents.send(IPC.githubUploadProgress, { done, total })))
   ipcMain.handle(IPC.gitClone, async (_e, url: string) => {
     const verr = validateCloneUrl(url)
     if (verr) return { ok: false, error: verr }

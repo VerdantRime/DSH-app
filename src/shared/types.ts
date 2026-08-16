@@ -100,6 +100,11 @@ export interface ToolchainReport { python: ToolInfo; gcc: ToolInfo; gpp: ToolInf
 export interface IdeRunRequest { language: 'python' | 'cpp' | 'java'; targetPath: string; interactive: boolean }
 export interface IdeRunResult { ok: boolean; output: string; exitCode: number | null; interactive: boolean }
 
+export interface UploadScanResult {
+  files: { localPath: string; repoPath: string; size: number }[]
+  skipped: { path: string; reason: string }[]
+}
+
 export interface IssueSummary {
   number: number
   title: string
@@ -220,6 +225,11 @@ export const IPC = {
   aiAsk: 'ai:ask',
   aiListModels: 'ai:listModels',
   githubCommitFiles: 'github:commitFiles',
+  githubPickFiles: 'github:pickFiles',
+  githubPickFolder: 'github:pickFolder',
+  githubScanUpload: 'github:scanUpload',
+  githubUploadBatch: 'github:uploadBatch',
+  githubUploadProgress: 'github:uploadProgress',
   gitClone: 'git:clone',
   appQuitReal: 'app:quitReal',
   appShowWindow: 'app:showWindow',
@@ -254,6 +264,11 @@ export interface WorkdeskApi {
   githubGetReadme(owner: string, repo: string): Promise<ReadmeContent | null>
   githubListTree(owner: string, repo: string, dirPath?: string): Promise<string[]>
   githubCommitFiles(owner: string, repo: string, message: string, files: { path: string; content: string }[]): Promise<void>
+  githubPickFiles(): Promise<string[]>
+  githubPickFolder(): Promise<string | null>
+  githubScanUpload(localPaths: string[], mode: 'files' | 'folder', baseRepoDir: string): Promise<UploadScanResult>
+  githubUploadBatch(owner: string, repo: string, message: string, files: { localPath: string; repoPath: string }[]): Promise<{ uploaded: number }>
+  onGithubUploadProgress(cb: (p: { done: number; total: number }) => void): () => void
   gitClone(url: string): Promise<{ ok: boolean; dir?: string; error?: string }>
   githubDownloadFiles(owner: string, repo: string, paths: string[], destDir: string): Promise<{ saved: number; skipped: number }>
   githubPickSaveDir(): Promise<string | null>

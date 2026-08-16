@@ -18,4 +18,9 @@ describe('IDE UI 细节样式（base.css）', () => {
     expect(css).toMatch(/\.ui-dialog-overlay\s*\{[^}]*position:\s*fixed/)
     expect(css).toMatch(/\.ui-dialog-input\s*\{[^}]*border-radius/)
   })
+
+  it('上传确认弹窗样式存在', () => {
+    expect(css).toMatch(/\.upload-list\s*\{[^}]*max-height/)
+    expect(css).toMatch(/\.upload-confirm\s*\{[^}]*width/)
+  })
 })
