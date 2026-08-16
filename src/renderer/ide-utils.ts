@@ -128,8 +128,11 @@ export function canApplyAi(action: 'explain' | 'debug' | 'optimize' | 'chat', ha
 }
 
 /** 组装发送给 headless 智能体的完整提示（代码上下文 + 历史 + 最新问题）。 */
-export function buildChatPrompt(history: ChatTurn[], question: string, code: string, language: string): string {
+export function buildChatPrompt(history: ChatTurn[], question: string, code: string, language: string, fileName?: string): string {
   const lines: string[] = ['你是一名代码助手。']
+  if (fileName && fileName.trim()) {
+    lines.push('', '当前文件名：' + fileName)
+  }
   if (code && code.trim()) {
     lines.push('', '当前代码（语言 ' + language + '）：', '```', code, '```')
   }

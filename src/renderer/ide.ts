@@ -47,7 +47,7 @@ let inlineDecoIds: string[] = []
 let inlineDecoModel: monaco.editor.ITextModel | null = null
 let aiHistory: ChatTurn[] = []
 let lastAiAction: 'explain' | 'debug' | 'optimize' | 'chat' = 'chat'
-let aiModel = ''
+let aiModel = 'deepseek-v4-flash'
 
 function h(tag: string, className?: string, text?: string): HTMLElement {
   const e = document.createElement(tag)
@@ -523,7 +523,7 @@ async function sendAiChat(question: string, action: 'explain' | 'debug' | 'optim
   lastAiAction = action
   const tab = activeTab()
   const lang = tab ? (runLanguage(tab) ?? 'plaintext') : 'plaintext'
-  const prompt = buildChatPrompt(aiHistory, q, currentCodeContext(), lang)
+  const prompt = buildChatPrompt(aiHistory, q, currentCodeContext(), lang, tab?.title ?? '')
   const waiting = h('div', 'ide-ai-msg ide-ai-assistant', '思考中…')
   aiHistoryEl().appendChild(waiting)
   aiHistoryEl().scrollTop = aiHistoryEl().scrollHeight
@@ -771,15 +771,16 @@ async function runActive(): Promise<void> {
 
 async function loadAiModels(): Promise<void> {
   try {
-    const { current, models } = await window.api.aiListModels()
+    const { models } = await window.api.aiListModels()
     const sel = document.getElementById('ide-ai-model') as HTMLSelectElement | null
     if (!sel) return
     sel.replaceChildren()
     const def = document.createElement('option')
-    def.value = ''
-    def.textContent = '默认（' + current + '）'
+    def.value = 'deepseek-v4-flash'
+    def.textContent = '默认（deepseek-v4-flash）'
     sel.appendChild(def)
     for (const m of models) {
+      if (m === 'deepseek-v4-flash') continue
       const o = document.createElement('option')
       o.value = m
       o.textContent = m

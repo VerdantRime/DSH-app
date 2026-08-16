@@ -21,9 +21,9 @@ export function currentModelOf(yamlText: string): string {
   try {
     const doc = load(yamlText) as Record<string, unknown>
     const am = doc?.['agent-default-model'] as Record<string, unknown> | undefined
-    return (am?.model as string) || 'deepseek-v4-pro'
+    return (am?.model as string) || 'deepseek-v4-flash'
   } catch {
-    return 'deepseek-v4-pro'
+    return 'deepseek-v4-flash'
   }
 }
 

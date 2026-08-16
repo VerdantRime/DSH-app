@@ -17,9 +17,11 @@ describe('AI 任务构建与结果解析', () => {
       [{ role: 'user', content: '这是什么？' }, { role: 'assistant', content: '这是主函数' }],
       '再解释一遍',
       'int main() { return 0; }',
-      'cpp'
+      'cpp',
+      'main.cpp'
     )
     expect(p).toContain('int main() { return 0; }')
+    expect(p).toContain('main.cpp')
     expect(p).toContain('用户：这是什么？')
     expect(p).toContain('助手：这是主函数')
     expect(p).toContain('再解释一遍')
@@ -36,7 +38,7 @@ describe('AI 任务构建与结果解析', () => {
 
   it('currentModelOf 读取当前模型', () => {
     expect(currentModelOf('agent-default-model:\n  model: deepseek-v4-pro\n')).toBe('deepseek-v4-pro')
-    expect(currentModelOf('')).toBe('deepseek-v4-pro')
+    expect(currentModelOf('')).toBe('deepseek-v4-flash')
   })
 
   it('DEEPSEEK_MODELS 为真实模型名（无 V3/R1）', () => {
