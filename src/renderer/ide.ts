@@ -1,5 +1,5 @@
 import monaco from './monaco-setup'
-import { languageForFile, tabTitleFromPath, isInteractiveSource, usesConsoleApis, defaultRunFileName, extractCodeBlock, githubTabKey, buildChatPrompt, canApplyAi, clamp, diffHunks, applyHunks, type ChatTurn, type IdeLanguage } from './ide-utils'
+import { languageForFile, tabTitleFromPath, isInteractiveSource, usesConsoleApis, defaultRunFileName, extractCodeBlock, githubTabKey, buildChatPrompt, canApplyAi, clamp, diffHunks, applyHunks, parseCompileErrors, type ChatTurn, type IdeLanguage } from './ide-utils'
 import { diffLines } from 'diff'
 import { githubErrorHint } from './github-utils'
 import { showContextMenu, copyText, type CtxMenuItem } from './context-menu'
@@ -720,10 +720,25 @@ async function compileActive(): Promise<void> {
     await window.api.ideWriteFile(targetPath, content, tab.encoding ?? 'utf-8')
     showOutput('编译中…')
     const res = await window.api.ideCompile({ language: lang, targetPath })
+    monaco.editor.setModelMarkers(tab.model, 'compile', [])
     if (res.ok) {
       showOutput('编译成功，无错误')
     } else {
       showOutput(res.output + (res.exitCode !== null ? ('\n[退出码 ' + res.exitCode + ']') : ''))
+      const errs = parseCompileErrors(res.output)
+      if (errs.length) {
+        const markers: monaco.editor.IMarkerData[] = errs.map((e) => ({
+          severity: monaco.MarkerSeverity.Error,
+          message: e.message,
+          startLineNumber: Math.max(1, e.line),
+          startColumn: e.column,
+          endLineNumber: Math.max(1, e.line),
+          endColumn: 1000
+        }))
+        monaco.editor.setModelMarkers(tab.model, 'compile', markers)
+        editor?.revealLineInCenter(Math.max(1, errs[0].line))
+        editor?.setPosition({ lineNumber: Math.max(1, errs[0].line), column: errs[0].column })
+      }
     }
   } catch (e) {
     showOutput('编译失败：' + (e instanceof Error ? e.message : String(e)))

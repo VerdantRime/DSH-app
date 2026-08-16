@@ -2,6 +2,23 @@ export function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value))
 }
 
+export interface CompileError { line: number; column: number; message: string }
+
+/** 从编译器输出解析错误位置（gcc `file:line:col: error`、javac `file:line: error`、python `line N`）。 */
+export function parseCompileErrors(output: string): CompileError[] {
+  const errs: CompileError[] = []
+  const lines = output.split(/\r?\n/)
+  for (const l of lines) {
+    let m = l.match(/:(\d+):(\d+):\s*(error|warning|fatal error):\s*(.*)/)
+    if (m) { errs.push({ line: +m[1], column: +m[2], message: (m[3] + ': ' + m[4]).trim() }); continue }
+    m = l.match(/:(\d+):\s*(error|warning):\s*(.*)/)
+    if (m) { errs.push({ line: +m[1], column: 1, message: (m[2] + ': ' + m[3]).trim() }); continue }
+    m = l.match(/line\s+(\d+)/)
+    if (m) { errs.push({ line: +m[1], column: 1, message: l.trim() }); continue }
+  }
+  return errs
+}
+
 import { diffArrays } from 'diff'
 
 export interface DiffHunk {

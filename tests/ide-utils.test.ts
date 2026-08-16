@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { languageForFile, tabTitleFromPath, githubTabKey, canApplyAi, clamp, diffHunks, applyHunks } from '../src/renderer/ide-utils'
+import { languageForFile, tabTitleFromPath, githubTabKey, canApplyAi, clamp, diffHunks, applyHunks, parseCompileErrors } from '../src/renderer/ide-utils'
 
 describe('IDE 语言识别', () => {
   it('按扩展名识别语言', () => {
@@ -26,6 +26,13 @@ describe('IDE 语言识别', () => {
     expect(diffHunks('a\nb\nc', 'a\nx\nc')).toEqual([{ oldStart: 1, oldCount: 1, newLines: ['x'] }])
     expect(diffHunks('a\nb\nc', 'a\nc')).toEqual([{ oldStart: 1, oldCount: 1, newLines: [] }])
     expect(diffHunks('a\nc', 'a\nb\nc')).toEqual([{ oldStart: 1, oldCount: 0, newLines: ['b'] }])
+  })
+
+  it('parseCompileErrors 解析 gcc/javac/python 错误位置', () => {
+    expect(parseCompileErrors('E:\\t\\main.c:12:5: error: expected \';\' before \'}\' token')[0]).toEqual({ line: 12, column: 5, message: 'error: expected \';\' before \'}\' token' })
+    expect(parseCompileErrors('Main.java:7: error: \';\' expected')[0].line).toBe(7)
+    expect(parseCompileErrors('  File "main.py", line 12')[0].line).toBe(12)
+    expect(parseCompileErrors('编译成功')[0]).toBeUndefined()
   })
 
   it('applyHunks 只应用 accepted 的块', () => {
