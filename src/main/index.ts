@@ -13,6 +13,7 @@ import { GithubService } from './github-service'
 import { GithubClient } from './github'
 import { shouldHideToTray } from './close-behavior'
 import { StatsStore } from './stats-store'
+import { StatsTracker } from './stats-tracker'
 import { IPC, type AppConfig } from '../shared/types'
 
 let mainWindow: BrowserWindow | null = null
@@ -23,6 +24,7 @@ let store: ConfigStore | null = null
 let harness: HarnessManager | null = null
 let logger: RollingLogger | null = null
 let stats: StatsStore | null = null
+let tracker: StatsTracker | null = null
 
 function buildHarnessManager(cfg: AppConfig): HarnessManager {
   return new HarnessManager({
@@ -70,6 +72,8 @@ if (!gotLock) {
     stats = new StatsStore(join(userData, 'stats.json'))
     await stats.load()
     stats.bump('launches')
+    tracker = new StatsTracker(stats, () => mainWindow)
+    tracker.start()
 
     // 本地代理/镜像常带自签证书；勾选后忽略证书校验（不校验证书有安全风险）
     if (cfg.github.allowInsecureTls) {
@@ -88,6 +92,7 @@ if (!gotLock) {
       github,
       backup,
       stats,
+      tracker,
       getWindow: () => mainWindow,
       quit: () => {
         isQuitting = true

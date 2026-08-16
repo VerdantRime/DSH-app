@@ -3,6 +3,7 @@ import { initChat, setChatVisible } from './chat'
 import { initGithub } from './github'
 import { initIde } from './ide'
 import { initSettings } from './settings'
+import { statsSetPanel } from './stats'
 
 let current: PanelId = DEFAULT_PANEL
 let collapsed = false
@@ -37,6 +38,7 @@ function select(id: PanelId): void {
     n.classList.toggle('active', (n as HTMLElement).dataset.panel === id)
   })
   setChatVisible(id === 'chat')
+  statsSetPanel(id)
 }
 
 function applyCollapse(): void {

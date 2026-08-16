@@ -15,6 +15,7 @@ import type { ConfigStore } from './store'
 import type { HarnessManager } from './harness-manager'
 import type { GithubService } from './github-service'
 import type { StatsStore } from './stats-store'
+import type { StatsTracker } from './stats-tracker'
 
 export interface BackupApi {
   create: (destPath?: string) => Promise<{ path: string }>
@@ -27,6 +28,7 @@ export interface IpcDeps {
   github: GithubService
   backup: BackupApi
   stats: StatsStore
+  tracker: StatsTracker
   getWindow: () => BrowserWindow | null
   quit: () => void
 }
@@ -193,4 +195,5 @@ export function registerIpc(deps: IpcDeps): void {
   ipcMain.handle(IPC.statsReset, () => deps.stats.reset())
   ipcMain.handle(IPC.statsBump, (_e, field: StatsScalarField, by?: number) => deps.stats.bump(field, by))
   ipcMain.handle(IPC.statsBumpMap, (_e, field: StatsMapField, key: string, by?: number) => deps.stats.bumpMap(field, key, by))
+  ipcMain.handle(IPC.statsSetBucket, (_e, bucket, ctx) => deps.tracker.setBucket(bucket, ctx))
 }

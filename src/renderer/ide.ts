@@ -5,6 +5,7 @@ import { showContextMenu, copyText, type CtxMenuItem } from './context-menu'
 import DOMPurify from 'dompurify'
 import { renderMarkdown } from './markdown'
 import { promptDialog } from './ui-dialog'
+import { statsSetIde } from './stats'
 import type { IdeRunResult } from '../shared/types'
 
 const MONACO_LANG: Record<IdeLanguage, string> = {
@@ -76,6 +77,7 @@ function switchTab(id: number): void {
   syncLangSelect(tab.model.getLanguageId())
   renderTabs()
   updateGithubButtons()
+  statsSetIde(tab.path ?? tab.github?.path ?? null, languageForFile(tab.title))
 }
 
 function syncLangSelect(monacoLang: string): void {
@@ -261,6 +263,7 @@ function closeTab(id: number): void {
     activeId = 0
     editor?.setModel(null)
     renderTabs()
+    statsSetIde(null, 'plaintext')
     return
   }
   if (activeId === id) switchTab(tabs[Math.min(i, tabs.length - 1)].id)
