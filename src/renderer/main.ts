@@ -5,6 +5,7 @@ import { initIde } from './ide'
 import { initSettings } from './settings'
 import { statsSetPanel } from './stats'
 import { showExitSummary } from './stats-ui'
+import { showOnboarding } from './onboarding'
 
 let current: PanelId = DEFAULT_PANEL
 let collapsed = false
@@ -48,9 +49,11 @@ function applyCollapse(): void {
 
 async function init(): Promise<void> {
   buildNav()
+  let onboarded = true
   try {
     const cfg = await window.api.configGet()
     collapsed = cfg.sidebarCollapsed
+    onboarded = cfg.onboarded
     applyCollapse()
   } catch (e) {
     console.error('读取配置失败', e)
@@ -74,6 +77,7 @@ async function init(): Promise<void> {
   initGithub()
   initSettings()
   select(DEFAULT_PANEL)
+  if (!onboarded) showOnboarding()
 }
 
 void init()

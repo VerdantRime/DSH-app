@@ -216,6 +216,17 @@ body.ide-resizing { user-select: none; cursor: col-resize; }
 .stats-bar-fill { height: 100%; background: linear-gradient(90deg, var(--brand-blue), var(--brand-indigo)); border-radius: var(--radius-pill); }
 .stats-bar-val { width: 120px; flex: none; text-align: right; font-size: 12px; color: var(--fg-muted); font-variant-numeric: tabular-nums; }
 .stats-exit { width: 420px; }
+.onboard-box { width: 560px; }
+.onboard-body { gap: 6px; }
+.onboard-p { margin: 0 0 8px; font-size: 13px; line-height: 1.6; color: var(--fg); }
+.onboard-item { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); align-items: flex-start; }
+.onboard-ok { flex: none; width: 20px; font-weight: 700; text-align: center; }
+.onboard-ok.ok { color: #2ea043; }
+.onboard-ok.no { color: #cf222e; }
+.onboard-item-col { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.onboard-item-label { font-size: 13px; font-weight: 600; color: var(--fg); }
+.onboard-item-detail { font-size: 12px; color: var(--fg-muted); }
+.onboard-item-hint { font-size: 12px; color: var(--accent-strong); word-break: break-word; }
 
 /* ============ GitHub 面板 ============ */
 #panel-github { overflow: auto; padding: var(--space-4); }
