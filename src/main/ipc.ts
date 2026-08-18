@@ -11,6 +11,7 @@ import type { IdeRunRequest } from '../shared/types'
 import { askWithModel, buildPromptTask, listModels } from './ai'
 import { cloneRepo, repoNameFromUrl, validateCloneUrl } from './clone'
 import { walkFiles, buildUploadPlan } from './upload-plan'
+import { runEnvCheck } from './env-check'
 import type { ConfigStore } from './store'
 import type { HarnessManager } from './harness-manager'
 import type { GithubService } from './github-service'
@@ -43,6 +44,10 @@ export function registerIpc(deps: IpcDeps): void {
   ipcMain.handle(IPC.appGetVersion, () => app.getVersion())
   ipcMain.handle(IPC.appOpenExternal, (_e, url: string) => shell.openExternal(url))
   ipcMain.handle(IPC.appTranslate, (_e, text: string) => translateMarkdown(text))
+  ipcMain.handle(IPC.envCheck, async () => {
+    const st = await deps.github.getStatus()
+    return runEnvCheck({ dshHome: deps.store.get().harness.dataDir, githubLoggedIn: st.loggedIn })
+  })
   // IDE 文件系统
   ipcMain.handle(IPC.ideOpenFiles, async () => {
     const win = deps.getWindow()

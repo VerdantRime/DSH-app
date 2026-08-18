@@ -10,6 +10,7 @@ export function defaultConfig(): AppConfig {
     launchBehavior: { autoStartHarness: true },
     sidebarCollapsed: false,
     closeToTray: true,
+    onboarded: false,
     wallpaper: 'random',
     wallpaperCustomPath: '',
     github: { apiBaseUrl: 'https://api.github.com', allowInsecureTls: false },

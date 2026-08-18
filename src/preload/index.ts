@@ -12,6 +12,7 @@ const api: WorkdeskApi = {
   ping: () => Promise.resolve('pong'),
   configGet: () => ipcRenderer.invoke(IPC.configGet),
   configSet: (patch) => ipcRenderer.invoke(IPC.configSet, patch),
+  envCheck: () => ipcRenderer.invoke(IPC.envCheck),
   harnessGetStatus: () => ipcRenderer.invoke(IPC.harnessGetStatus),
   harnessStart: () => ipcRenderer.invoke(IPC.harnessStart),
   harnessStop: () => ipcRenderer.invoke(IPC.harnessStop),

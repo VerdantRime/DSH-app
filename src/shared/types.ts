@@ -16,6 +16,7 @@ export interface AppConfig {
   }
   sidebarCollapsed: boolean
   closeToTray: boolean
+  onboarded: boolean
   wallpaper: string
   wallpaperCustomPath: string
   github: {
@@ -136,6 +137,20 @@ export interface StatsSnapshot {
 export type StatsScalarField = keyof Omit<StatsCounters, 'byFile' | 'byLang' | 'byFileErrors'>
 export type StatsMapField = 'byFile' | 'byLang' | 'byFileErrors'
 
+export interface EnvCheckItem {
+  id: string
+  label: string
+  required: boolean
+  ok: boolean
+  detail: string
+  hint?: string
+}
+
+export interface EnvCheckResult {
+  items: EnvCheckItem[]
+  allReady: boolean
+}
+
 export interface IssueSummary {
   number: number
   title: string
@@ -235,6 +250,7 @@ export const IPC = {
   githubGetCommit: 'github:getCommit',
   configGet: 'config:get',
   configSet: 'config:set',
+  envCheck: 'env:check',
   backupCreate: 'backup:create',
   backupRestore: 'backup:restore',
   appOpenExternal: 'app:openExternal',
@@ -281,6 +297,7 @@ export interface WorkdeskApi {
   ping(): Promise<string>
   configGet(): Promise<AppConfig>
   configSet(patch: DeepPartial<AppConfig>): Promise<AppConfig>
+  envCheck(): Promise<EnvCheckResult>
   harnessGetStatus(): Promise<HarnessStatus>
   harnessStart(): Promise<HarnessStatus>
   harnessStop(): Promise<{ stoppedOwn: boolean }>
