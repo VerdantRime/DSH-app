@@ -388,6 +388,13 @@ body.ide-resizing { user-select: none; cursor: col-resize; }
 [data-theme='anime'] .btn { font-weight: 600; }
 [data-theme='anime'] .ide-tree-head, [data-theme='anime'] .ide-panel-head { color: var(--anime-pink-deep); }
 [data-theme='anime'] .brand-sub { color: var(--anime-pink-deep); }
+.help-box { border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 12px 14px; margin-bottom: 12px; background: var(--accent-soft); }
+.help-item { margin-bottom: 10px; }
+.help-item:last-child { margin-bottom: 0; }
+.help-title { font-size: 13px; font-weight: 700; color: var(--accent-strong); margin-bottom: 2px; }
+.help-desc { font-size: 12px; line-height: 1.6; color: var(--fg); }
+.help-check { margin-top: 10px; }
+.help-check-item { display: flex; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--border); align-items: flex-start; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

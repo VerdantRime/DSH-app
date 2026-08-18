@@ -2,6 +2,7 @@ import { resolveTheme, themeLabel } from './theme'
 import { WALLPAPERS, resolveWallpaper } from './wallpapers'
 import { GITHUB_TOKEN_URL, TOKEN_HELP_STEPS } from './github-help'
 import { openStatsView } from './stats-ui'
+import { showOnboarding } from './onboarding'
 import type { AppConfig, ThemeMode, GithubStatus, ToolchainReport } from '../shared/types'
 
 let cfg: AppConfig | null = null
@@ -76,6 +77,7 @@ function render(): void {
   panel.appendChild(renderGithub())
   panel.appendChild(renderHarness())
   panel.appendChild(renderStatsSection())
+  panel.appendChild(renderHelpSection())
   panel.appendChild(renderAbout())
 }
 
@@ -336,6 +338,54 @@ function renderStatsSection(): HTMLElement {
   s.appendChild(row)
   s.appendChild(h('div', 'set-note', '记录编码时长、编译错误次数、AI 对话时长等；退出应用时也会显示本次总结'))
   return s
+}
+
+function helpItem(title: string, desc: string): HTMLElement {
+  const d = h('div', 'help-item')
+  d.appendChild(h('div', 'help-title', title))
+  d.appendChild(h('div', 'help-desc', desc))
+  return d
+}
+
+function renderHelpSection(): HTMLElement {
+  const s = section('使用帮助')
+  const help = h('div', 'help-box')
+  help.appendChild(helpItem('聊天（harness）', '内嵌 DeepSeek Harness 网页。首次打开按页面提示填写你的 DeepSeek API Key（需先装 Node.js）。'))
+  help.appendChild(helpItem('代码（IDE）', '内置 Monaco 编辑器：多标签、自动保存（15s）、编译/运行 C/C++/Python/Java。编译运行需本机装对应工具链，可在「IDE 工具链」里手动指定路径。'))
+  help.appendChild(helpItem('AI 助手', '选中代码后点「解释 / 找错 / 优化」，或在右侧输入框直接提问；答案流式逐字输出，默认模型 deepseek-v4-flash。'))
+  help.appendChild(helpItem('GitHub', '在「设置 → GitHub」粘贴 Personal Access Token（只读可浏览，读写才能上传/新建）。支持上传文件夹、批量下载、克隆仓库。'))
+  help.appendChild(helpItem('统计信息', '记录编码时长、编译出错次数、AI 对话时长等；退出应用时显示本次总结。'))
+  s.appendChild(help)
+  const row = h('div', 'set-row')
+  row.appendChild(btn('环境自检', () => void runEnvCheckInHelp()))
+  row.appendChild(btn('重新打开引导', () => showOnboarding()))
+  s.appendChild(row)
+  const result = h('div', 'help-check', '')
+  result.id = 'help-check'
+  s.appendChild(result)
+  return s
+}
+
+async function runEnvCheckInHelp(): Promise<void> {
+  const el = document.getElementById('help-check')
+  if (!el) return
+  el.replaceChildren(h('div', 'set-note', '检测中…'))
+  try {
+    const env = await window.api.envCheck()
+    el.replaceChildren()
+    for (const it of env.items) {
+      const row = h('div', 'help-check-item')
+      row.appendChild(h('span', 'onboard-ok ' + (it.ok ? 'ok' : 'no'), it.ok ? '✓' : '✗'))
+      const col = h('div', 'onboard-item-col')
+      col.appendChild(h('div', 'onboard-item-label', it.label))
+      col.appendChild(h('div', 'onboard-item-detail', it.detail))
+      if (!it.ok && it.hint) col.appendChild(h('div', 'onboard-item-hint', it.hint))
+      row.appendChild(col)
+      el.appendChild(row)
+    }
+  } catch (e) {
+    el.replaceChildren(h('div', 'set-note', '检测失败：' + (e instanceof Error ? e.message : String(e))))
+  }
 }
 
 function renderAbout(): HTMLElement {
